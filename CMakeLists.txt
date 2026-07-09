@@ -32,7 +32,11 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 enable_language(C ASM)
 
 # Create an executable object type
-add_executable(${CMAKE_PROJECT_NAME})
+add_executable(${CMAKE_PROJECT_NAME}
+    App/Inc/tmc2209.h
+    App/Inc/tmc2209_stm32.h
+    App/Src/tmc2209.c
+    App/Src/tmc2209_stm32.c)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -49,12 +53,12 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
+    App/Inc
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined symbols
+    TMC2209_STM32_DEVICE_HEADER="stm32f1xx.h"
 )
 
 # Remove wrong libob.a library dependency when using cpp files
