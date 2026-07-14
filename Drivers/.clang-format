@@ -1,0 +1,3 @@
+# ST HAL/CMSIS vendor code — never reformat.
+DisableFormat: true
+SortIncludes: Never

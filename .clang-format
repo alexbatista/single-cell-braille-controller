@@ -1,0 +1,15 @@
+# clang-format configuration for C sources (used by clangd / clang-format).
+# LLVM base style, matching the existing code in App/ and Lib/.
+---
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 80
+BreakBeforeBraces: Attach
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: None
+# Include order is significant in embedded code (HAL/CMSIS/device headers);
+# never let the formatter reorder it.
+SortIncludes: Never
