@@ -88,9 +88,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init(); 
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  // App_init(&huart2, &huart3);
+  App_init(&huart2, &huart3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,11 +99,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    HAL_Delay(3000);
-
-    // App_run();
-
+    App_run();
   }
   /* USER CODE END 3 */
 }

@@ -46,7 +46,7 @@ extern "C" {
 typedef struct tmc2209_stm32_enable_pin
 {
   GPIO_TypeDef * port;
-  uint8_t pin; // pin number 0-15
+  uint16_t pin_mask; // GPIO_PIN_x single bit mask
 } tmc2209_stm32_enable_pin_t;
 
 typedef struct tmc2209_stm32
@@ -64,9 +64,10 @@ typedef struct tmc2209_stm32
 // the desired baud rate, 8 data bits, no parity, 1 stop bit, with the
 // transmitter and receiver enabled.
 //
-// enable_port/enable_pin: GPIO output wired to the TMC2209 ENN input,
-// already configured as a push-pull output. Pass NULL for enable_port if
-// the ENN pin is not controlled by the microcontroller.
+// enable_port/enable_pin_mask: GPIO output wired to the TMC2209 ENN input,
+// already configured as a push-pull output. The pin is a GPIO_PIN_x mask,
+// so the defines from Core/Inc/main.h can be passed straight in. Pass NULL
+// for enable_port if the ENN pin is not controlled by the microcontroller.
 //
 // The DWT cycle counter is used for microsecond delays on Cortex-M3 and
 // above; it is enabled by this function. SystemCoreClock must be correct
@@ -75,7 +76,7 @@ void tmc2209_stm32_hal_init(tmc2209_stm32_t * port,
   tmc2209_hal_t * hal,
   USART_TypeDef * usart,
   GPIO_TypeDef * enable_port,
-  uint8_t enable_pin);
+  uint16_t enable_pin_mask);
 
 #ifdef __cplusplus
 }

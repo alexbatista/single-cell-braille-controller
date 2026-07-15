@@ -24,8 +24,10 @@ typedef struct Stepper_Hal {
   // Drive the DIR output: true = forward, false = backward.
   void (*dir_write)(void *ctx, bool level);
 
-  //Drive the ENABLE output: true = high, false = low.
-  void (*enable_write)(void *ctx, bool level);
+  // Optional, may be NULL. Drive the driver enable input: true = driver
+  // enabled (motor energized), false = disabled. The port implements any
+  // inversion the driver needs (the TMC2209 ENN input is active low).
+  void (*enable_write)(void *ctx, bool enable);
 
   // Opaque pointer passed unchanged to every callback.
   void *ctx;
@@ -39,9 +41,16 @@ typedef struct Stepper {
   bool enabled;
 } Stepper_t;
 
-// hal is copied into the instance; direction is set to forward and the STEP
-// output is driven low. The GPIOs must already be configured as outputs.
+// hal is copied into the instance; direction is set to forward, the STEP
+// output is driven low and the driver starts disabled. The GPIOs must
+// already be configured as outputs.
 void Stepper_Init(Stepper_t *stepper, Stepper_Hal_t const *hal);
+
+// Drive the enable output through the optional enable_write callback; only
+// the enabled flag changes when the HAL does not provide one.
+void Stepper_Enable(Stepper_t *stepper);
+void Stepper_Disable(Stepper_t *stepper);
+bool Stepper_IsEnabled(Stepper_t const *stepper);
 
 void Stepper_SetDirection(Stepper_t *stepper, bool forward);
 

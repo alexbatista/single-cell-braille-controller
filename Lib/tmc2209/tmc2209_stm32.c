@@ -160,10 +160,9 @@ static void tmc2209_stm32_set_hardware_enable_pin(void *context, bool enable) {
   }
   // ENN is active low: reset the pin to enable the driver, set it to disable
   if (enable) {
-    port->enable_pin.port->BSRR =
-        (uint32_t)(1u << (port->enable_pin.pin + 16u));
+    port->enable_pin.port->BSRR = (uint32_t)port->enable_pin.pin_mask << 16u;
   } else {
-    port->enable_pin.port->BSRR = (uint32_t)(1u << port->enable_pin.pin);
+    port->enable_pin.port->BSRR = port->enable_pin.pin_mask;
   }
 }
 
@@ -173,10 +172,10 @@ static void tmc2209_stm32_set_hardware_enable_pin(void *context, bool enable) {
 
 void tmc2209_stm32_hal_init(tmc2209_stm32_t *port, tmc2209_hal_t *hal,
                             USART_TypeDef *usart, GPIO_TypeDef *enable_port,
-                            uint8_t enable_pin) {
+                            uint16_t enable_pin_mask) {
   port->usart = usart;
   port->enable_pin.port = enable_port;
-  port->enable_pin.pin = enable_pin;
+  port->enable_pin.pin_mask = enable_pin_mask;
   port->rx_head = 0;
   port->rx_tail = 0;
 
