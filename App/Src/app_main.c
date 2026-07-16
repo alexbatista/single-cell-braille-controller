@@ -1,5 +1,7 @@
 #include "app_main.h"
 #include "main.h"
+#include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_uart.h"
 #include "usart.h"
 
 #include "stepper.h"
@@ -20,7 +22,7 @@
 #define APP_FULL_STEPS_PER_REV 200u // 1.8 degree motor
 #define APP_MICROSTEPS 8u
 #define APP_MICROSTEPS_PER_REV (APP_FULL_STEPS_PER_REV * APP_MICROSTEPS)
-#define APP_ROTATION_TIME_MS 2500u
+#define APP_ROTATION_TIME_MS 5000u
 
 #define APP_RUN_CURRENT_PERCENT 80u
 #define APP_HOLD_CURRENT_PERCENT 40u
@@ -46,8 +48,9 @@ static bool motor_driver_init(tmc2209_t *tmc, tmc2209_stm32_t *tmc_port,
                               uint16_t enable_pin) {
   tmc2209_hal_t hal;
   tmc2209_stm32_hal_init(tmc_port, &hal, usart, enable_port, enable_pin);
+  HAL_Delay(500u);
   tmc2209_setup(tmc, &hal, TMC2209_SERIAL_ADDRESS_0);
-
+  
   // tmc2209_setup() leaves automatic current scaling off; in stealthChop
   // (the mode the driver runs in) that means the coils only get the fixed
   // PWM_OFS amplitude (~14% of supply) and IRUN/IHOLD are ignored, which
@@ -94,10 +97,10 @@ static void motor_stepper_init(Stepper_t *stepper,
 }
 
 void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02) {
-  // MX_GPIO_Init() leaves both ENN pins low, i.e. both drivers enabled with
-  // uncontrolled power-on default currents (a driver left in that state
-  // heats up fast). Disable both right away; each motor is re-enabled at
-  // the end of its own configuration.
+  // MX_GPIO_Init() already boots both ENN pins high (drivers disabled);
+  // assert that state again here so App_init() is safe even if the CubeMX
+  // defaults regress. Each motor is re-enabled at the end of its own
+  // configuration.
   HAL_GPIO_WritePin(ENABLE_MOTOR01_GPIO_Port, ENABLE_MOTOR01_Pin,
                     GPIO_PIN_SET);
   HAL_GPIO_WritePin(ENABLE_MOTOR02_GPIO_Port, ENABLE_MOTOR02_Pin,
@@ -158,3 +161,8 @@ void App_run(void) {
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
   rotate_one_revolution(true);
 }
+
+// void Test_UART(void){
+//   const uint8_t data = "Howdy."
+//   HAL_UART_Transmit(tmc_port_motor_01.usart, &data, sizeof(data), 200)
+// }
