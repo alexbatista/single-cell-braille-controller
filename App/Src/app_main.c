@@ -22,7 +22,7 @@
 #define APP_FULL_STEPS_PER_REV 200u // 1.8 degree motor
 #define APP_MICROSTEPS 8u
 #define APP_MICROSTEPS_PER_REV (APP_FULL_STEPS_PER_REV * APP_MICROSTEPS)
-#define APP_ROTATION_TIME_MS 5000u
+#define APP_ROTATION_TIME_MS 1000u
 
 #define APP_RUN_CURRENT_PERCENT 40u
 #define APP_HOLD_CURRENT_PERCENT 40u
@@ -161,8 +161,3 @@ void App_run(void) {
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
   rotate_one_revolution(true);
 }
-
-// void Test_UART(void){
-//   const uint8_t data = "Howdy."
-//   HAL_UART_Transmit(tmc_port_motor_01.usart, &data, sizeof(data), 200)
-// }
