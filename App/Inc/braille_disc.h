@@ -31,8 +31,9 @@
  *
  */
 // Disc 1 has 4 weights, disc 2 as 16 weights
-#define DISC1_ANGLE_TO_POS_ANG(WEIGHT) ((WEIGHT * 225) % 900)
-#define DISC2_ANGLE_TO_POS_ANG(WEIGHT) (WEIGHT * 225)
+#define DISC1_ANGLE_TO_POS_ANG(WEIGHT)                                         \
+  ((WEIGHT * DISC_ANGLE_TO_POS_ANG_1) % DISC_ANGLE_TO_POS_ANG_4)
+#define DISC2_ANGLE_TO_POS_ANG(WEIGHT) (WEIGHT * DISC_ANGLE_TO_POS_ANG_1)
 
 #include <stdint.h>
 
