@@ -46,12 +46,14 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add sources to executable
+# Glob every C source under App/Src so newly added files are built without
+# editing this list. CONFIGURE_DEPENDS makes CMake re-run the glob when the
+# directory contents change, so a plain rebuild picks up new files.
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/*.c
+)
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    App/Src/app_main.c
-    App/Src/stepper.c
-    App/Src/stepper_hal.c
-    App/Src/motion_planner.c
-    App/Src/braille_disc.c
+    ${APP_SOURCES}
 )
 
 # Add include paths
