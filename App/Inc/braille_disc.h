@@ -1,6 +1,7 @@
 #ifndef BRAILLE_DISC_H
 #define BRAILLE_DISC_H
 
+#include <stdint.h>
 // All elements are multiplied by 10 to become integer and work with mod
 // function
 #define DISC_ANGLE_TO_POS_ANG_0 0
@@ -35,14 +36,8 @@
   ((WEIGHT * DISC_ANGLE_TO_POS_ANG_1) % DISC_ANGLE_TO_POS_ANG_4)
 #define DISC2_ANGLE_TO_POS_ANG(WEIGHT) (WEIGHT * DISC_ANGLE_TO_POS_ANG_1)
 
-#include <stdint.h>
-
-static uint8_t get_character_weight_single_row_disc(char c);
-static uint8_t get_character_weight_double_row_disc(char c);
-static void move_single_row_disc(void);
-static void move_double_row_disc(void);
-static uint16_t character_to_position(uint8_t character);
-
-void Goto_character(uint8_t character);
+// Public API. The per-disc helpers are implementation details of
+// braille_disc.c and stay file-static there.
+void translate_char_on_disc(uint8_t character);
 
 #endif
