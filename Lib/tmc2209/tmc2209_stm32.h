@@ -27,6 +27,7 @@
 #ifndef TMC2209_STM32_H
 #define TMC2209_STM32_H
 
+#include "stm32f103xb.h"
 #if defined(TMC2209_STM32_DEVICE_HEADER)
 #include TMC2209_STM32_DEVICE_HEADER
 #endif
@@ -43,15 +44,13 @@ extern "C" {
 
 // Optional hardware enable (ENN) pin descriptor. Set port to NULL when the
 // ENN pin is hardwired.
-typedef struct tmc2209_stm32_enable_pin
-{
-  GPIO_TypeDef * port;
+typedef struct tmc2209_stm32_enable_pin {
+  GPIO_TypeDef *port;
   uint16_t pin_mask; // GPIO_PIN_x single bit mask
 } tmc2209_stm32_enable_pin_t;
 
-typedef struct tmc2209_stm32
-{
-  USART_TypeDef * usart;
+typedef struct tmc2209_stm32 {
+  USART_TypeDef *usart;
   tmc2209_stm32_enable_pin_t enable_pin;
   uint8_t rx_buffer[TMC2209_STM32_RX_BUFFER_SIZE];
   volatile uint8_t rx_head;
@@ -72,11 +71,9 @@ typedef struct tmc2209_stm32
 // The DWT cycle counter is used for microsecond delays on Cortex-M3 and
 // above; it is enabled by this function. SystemCoreClock must be correct
 // (call SystemCoreClockUpdate() after clock configuration).
-void tmc2209_stm32_hal_init(tmc2209_stm32_t * port,
-  tmc2209_hal_t * hal,
-  USART_TypeDef * usart,
-  GPIO_TypeDef * enable_port,
-  uint16_t enable_pin_mask);
+void tmc2209_stm32_hal_init(tmc2209_stm32_t *port, tmc2209_hal_t *hal,
+                            USART_TypeDef *usart, GPIO_TypeDef *enable_port,
+                            uint16_t enable_pin_mask);
 
 #ifdef __cplusplus
 }

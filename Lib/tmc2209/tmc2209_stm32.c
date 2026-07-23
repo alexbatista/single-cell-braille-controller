@@ -5,6 +5,7 @@
 // ----------------------------------------------------------------------------
 
 #include "tmc2209_stm32.h"
+#include "stm32f103xb.h"
 
 // ----------------------------------------------------------------------------
 // USART register compatibility layer
@@ -128,7 +129,8 @@ static void tmc2209_stm32_delay_microseconds(void *context,
 
 #else // Cortex-M0/M0+ have no DWT, fall back to a calibrated busy loop
 
-static void tmc2209_stm32_dwt_enable(void) {}
+static void tmc2209_stm32_dwt_enable(void) {
+}
 
 static void tmc2209_stm32_delay_microseconds(void *context,
                                              uint32_t microseconds) {
