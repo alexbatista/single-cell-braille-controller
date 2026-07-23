@@ -11,13 +11,14 @@
 // called forever from the main loop; the LED toggles once per revolution).
 //
 
-void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02) {
-  initialize_motors(huart_01, huart_02);
+void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02,
+              TIM_HandleTypeDef *htim_01, TIM_HandleTypeDef *htim_02) {
+  initialize_motors(huart_01, huart_02, htim_01, htim_02);
 }
 
 void App_run(void) {
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
-  translate_char_on_disc('A');
+  // translate_char_on_disc('A');
   test_rotate_motor();
 }

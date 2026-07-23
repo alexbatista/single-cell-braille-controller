@@ -7,6 +7,8 @@
 #include "stepper.h"
 #include "stepper_hal.h"
 #include "motion_planner.h"
+#include "stm32f103xb.h"
+#include "stm32f1xx_hal_tim.h"
 #include "tmc2209.h"
 #include "tmc2209_stm32.h"
 #include "stm32f1xx_hal.h"
@@ -24,13 +26,21 @@
 #define APP_RUN_CURRENT_PERCENT 40u
 #define APP_HOLD_CURRENT_PERCENT 40u
 
-// Motor 01: TMC2209 on USART2 (PA2/PA3), ENN PA5, STEP PA1, DIR PA4.
+// Step rate that turns the disc once per APP_ROTATION_TIME_MS.
+#define APP_STEP_RATE_HZ (APP_MICROSTEPS_PER_REV * 1000u / APP_ROTATION_TIME_MS)
+
+// Disc angles are expressed in tenths of a degree (see disk_angles_t).
+#define APP_ANGLE_TENTHS_PER_REV 3600u
+
+// Motor 01: TMC2209 on USART2 (PA2/PA3), ENN PA5, STEP PA1 (TIM2_CH2),
+// DIR PA4.
 static tmc2209_stm32_t tmc_port_motor_01;
 static tmc2209_t tmc_motor_01;
 static Stepper_Hal_Stm32_t stepper_hal_motor_01;
 static Stepper_t stepper_motor_01;
 
-// Motor 02: TMC2209 on USART3 (PB10/PB11), ENN PB0, STEP PB1, DIR PA7.
+// Motor 02: TMC2209 on USART3 (PB10/PB11), ENN PB0, STEP PB1 (TIM3_CH4),
+// DIR PA7.
 static tmc2209_stm32_t tmc_port_motor_02;
 static tmc2209_t tmc_motor_02;
 static Stepper_Hal_Stm32_t stepper_hal_motor_02;
@@ -45,7 +55,7 @@ static bool motor_driver_init(tmc2209_t *tmc, tmc2209_stm32_t *tmc_port,
                               uint16_t enable_pin) {
   tmc2209_hal_t hal;
   tmc2209_stm32_hal_init(tmc_port, &hal, usart, enable_port, enable_pin);
-  HAL_Delay(500u);
+  HAL_Delay(200u);
   tmc2209_setup(tmc, &hal, TMC2209_SERIAL_ADDRESS_0);
 
   // tmc2209_setup() leaves automatic current scaling off; in stealthChop
@@ -81,20 +91,34 @@ static void motor_comm_warning(uint32_t motor_index) {
   }
 }
 
-// Bind a stepper instance to its STEP/DIR pins. The ENN pin already belongs
-// to the motor's tmc2209 instance, so the stepper port gets no enable pin.
+// Bind a stepper instance to its DIR pin and to the timer channel that
+// drives the STEP output. The ENN pin already belongs to the motor's tmc2209
+// instance, so the stepper port gets no enable pin.
 static void motor_stepper_init(Stepper_t *stepper,
                                Stepper_Hal_Stm32_t *stepper_port,
-                               GPIO_TypeDef *step_port, uint16_t step_pin,
-                               GPIO_TypeDef *dir_port, uint16_t dir_pin) {
+                               TIM_HandleTypeDef *step_tim,
+                               uint32_t step_channel, GPIO_TypeDef *dir_port,
+                               uint16_t dir_pin) {
   Stepper_Hal_t hal;
-  Stepper_Hal_Stm32_Init(stepper_port, &hal, step_port, step_pin, dir_port,
+  Stepper_Hal_Stm32_Init(stepper_port, &hal, step_tim, step_channel, dir_port,
                          dir_pin, NULL, 0u);
   Stepper_Init(stepper, &hal);
 }
 
+// One STEP pulse just finished on one of the motor timers. The steppers are
+// owned here, so the timer to instance mapping lives here too and the
+// stepper port keeps no back pointer into the core.
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM2) {
+    Stepper_OnPulseComplete(&stepper_motor_01);
+  } else if (htim->Instance == TIM3) {
+    Stepper_OnPulseComplete(&stepper_motor_02);
+  }
+}
+
 void initialize_motors(UART_HandleTypeDef *huart_01,
-                       UART_HandleTypeDef *huart_02) {
+                       UART_HandleTypeDef *huart_02, TIM_HandleTypeDef *htim_01,
+                       TIM_HandleTypeDef *htim_02) {
   // MX_GPIO_Init() already boots both ENN pins high (drivers disabled);
   // assert that state again here so App_init() is safe even if the CubeMX
   // defaults regress. Each motor is re-enabled at the end of its own
@@ -111,50 +135,76 @@ void initialize_motors(UART_HandleTypeDef *huart_01,
     motor_comm_warning(2u);
   }
 
-  motor_stepper_init(&stepper_motor_01, &stepper_hal_motor_01,
-                     STEP_MOTOR01_GPIO_Port, STEP_MOTOR01_Pin,
-                     DIR_MOTOR01_GPIO_Port, DIR_MOTOR01_Pin);
-  motor_stepper_init(&stepper_motor_02, &stepper_hal_motor_02,
-                     STEP_MOTOR02_GPIO_Port, STEP_MOTOR02_Pin,
-                     DIR_MOTOR02_GPIO_Port, DIR_MOTOR02_Pin);
+  motor_stepper_init(&stepper_motor_01, &stepper_hal_motor_01, htim_01,
+                     TIM_CHANNEL_2, DIR_MOTOR01_GPIO_Port, DIR_MOTOR01_Pin);
+  motor_stepper_init(&stepper_motor_02, &stepper_hal_motor_02, htim_02,
+                     TIM_CHANNEL_4, DIR_MOTOR02_GPIO_Port, DIR_MOTOR02_Pin);
 
   // Make sure both drivers follow the STEP/DIR interface (VACTUAL = 0).
   tmc2209_move_using_step_dir_interface(&tmc_motor_01);
   tmc2209_move_using_step_dir_interface(&tmc_motor_02);
 }
 
-void move_to_angle(disk_angles_t disk_angle) {
-  Stepper_StepPulseBegin()
+// Start a move of steps microsteps, negative meaning backwards. The pulses
+// are emitted by the STEP timer in the background; the caller waits with
+// wait_until_idle().
+static void start_move(Stepper_t *stepper, int32_t steps) {
+  if (steps == 0) {
+    return;
+  }
+  Stepper_SetDirection(stepper, steps > 0);
+  Stepper_MoveSteps(stepper, (uint32_t)(steps > 0 ? steps : -steps),
+                    APP_STEP_RATE_HZ);
 }
 
-// Hold STEP high long enough for the TMC2209 (>= 100 ns); at 32 MHz this
-// loop is roughly a microsecond.
-static void step_pulse_width_delay(void) {
-  for (volatile uint32_t i = 0u; i < 8u; ++i) {
+static void wait_until_idle(void) {
+  while (Stepper_IsBusy(&stepper_motor_01) ||
+         Stepper_IsBusy(&stepper_motor_02)) {
   }
+}
+
+// Shortest signed microstep move from the current position to an absolute
+// disc angle. The discs turn freely, so a target more than half a turn ahead
+// is reached faster by going backwards.
+static int32_t steps_to_angle(Stepper_t const *stepper, uint16_t angle_tenths) {
+  int32_t const per_rev = (int32_t)APP_MICROSTEPS_PER_REV;
+  int32_t const target =
+      (int32_t)(((uint32_t)angle_tenths * APP_MICROSTEPS_PER_REV) /
+                APP_ANGLE_TENTHS_PER_REV);
+
+  int32_t current = Stepper_GetPosition(stepper) % per_rev;
+  if (current < 0) {
+    current += per_rev;
+  }
+
+  int32_t delta = (target - current) % per_rev;
+  if (delta > per_rev / 2) {
+    delta -= per_rev;
+  } else if (delta < -per_rev / 2) {
+    delta += per_rev;
+  }
+  return delta;
+}
+
+// Turn both discs to their absolute angles and block until they get there;
+// they run concurrently, so the move takes as long as the slower disc.
+void move_to_angle(disk_angles_t disk_angle) {
+  start_move(&stepper_motor_01,
+             steps_to_angle(&stepper_motor_01, disk_angle.single_row_disc));
+  start_move(&stepper_motor_02,
+             steps_to_angle(&stepper_motor_02, disk_angle.double_row_disc));
+  wait_until_idle();
 }
 
 // Turn both motors one full revolution over APP_ROTATION_TIME_MS, blocking.
 // clockwise maps to DIR high; if a motor spins the other way, swap one of
 // its coil pairs or use tmc2209_enable_inverse_motor_direction().
 static void rotate_one_revolution(bool clockwise) {
-  Stepper_SetDirection(&stepper_motor_01, clockwise);
-  Stepper_SetDirection(&stepper_motor_02, clockwise);
-
-  // Pace the microsteps against the millisecond tick so the revolution takes
-  // APP_ROTATION_TIME_MS regardless of the loop overhead.
-  uint32_t const start = HAL_GetTick();
-  for (uint32_t step = 1u; step <= APP_MICROSTEPS_PER_REV; ++step) {
-    uint32_t const due =
-        start + (step * APP_ROTATION_TIME_MS) / APP_MICROSTEPS_PER_REV;
-    while ((int32_t)(HAL_GetTick() - due) < 0) {
-    }
-    Stepper_StepPulseBegin(&stepper_motor_01);
-    Stepper_StepPulseBegin(&stepper_motor_02);
-    step_pulse_width_delay();
-    Stepper_StepPulseEnd(&stepper_motor_01);
-    Stepper_StepPulseEnd(&stepper_motor_02);
-  }
+  int32_t const steps = clockwise ? (int32_t)APP_MICROSTEPS_PER_REV
+                                  : -(int32_t)APP_MICROSTEPS_PER_REV;
+  start_move(&stepper_motor_01, steps);
+  start_move(&stepper_motor_02, steps);
+  wait_until_idle();
 }
 
 void test_rotate_motor() {
