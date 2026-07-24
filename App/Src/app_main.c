@@ -19,6 +19,6 @@ void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02,
 void App_run(void) {
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
-  // translate_char_on_disc('A');
-  test_rotate_motor();
+  translate_char_on_disc('q');
+  // test_rotate_motor();
 }
