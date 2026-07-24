@@ -1,0 +1,65 @@
+# Doxyfile for the Single-Cell Braille Controller
+# Only non-default settings are listed; Doxygen fills in the rest.
+# Generate docs with:  doxygen Doxyfile   (output lands in docs/html/index.html)
+
+#---------------------------------------------------------------------------
+# Project
+#---------------------------------------------------------------------------
+PROJECT_NAME           = "Single-Cell Braille Controller"
+PROJECT_BRIEF          = "STM32 two-motor braille disc controller"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+
+#---------------------------------------------------------------------------
+# Input: the App layer is the hand-written code. Core/ and Drivers/ are
+# CubeMX/vendor generated; add them here only if you want them documented too.
+#---------------------------------------------------------------------------
+INPUT                  = App README.md
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+
+#---------------------------------------------------------------------------
+# Build: what gets extracted
+#---------------------------------------------------------------------------
+OPTIMIZE_OUTPUT_FOR_C  = YES     # cleaner output for a C codebase
+EXTRACT_ALL            = YES     # also surface not-yet-documented entities
+EXTRACT_STATIC         = YES     # document file-static helpers (.c internals)
+EXTRACT_PRIVATE        = NO
+JAVADOC_AUTOBRIEF      = YES     # first sentence becomes the brief
+
+#---------------------------------------------------------------------------
+# Warnings: catch documentation gaps as you go
+#---------------------------------------------------------------------------
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES     # flag functions with undocumented @param
+
+#---------------------------------------------------------------------------
+# Preprocessor: expand the disc-angle macros so their values show up
+#---------------------------------------------------------------------------
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+# Ignore ARM CMSIS/HAL attribute keywords so they don't confuse the parser.
+PREDEFINED             = __attribute__(x)= \
+                         __weak= \
+                         __IO= \
+                         __I= \
+                         __O=
+
+#---------------------------------------------------------------------------
+# Output formats
+#---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES     # navigation sidebar
+
+#---------------------------------------------------------------------------
+# Diagrams. Requires Graphviz (`dot`). Set HAVE_DOT = NO if it isn't installed.
+#---------------------------------------------------------------------------
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = NO
+DOT_IMAGE_FORMAT       = svg

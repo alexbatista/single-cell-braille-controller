@@ -46,7 +46,7 @@ static uint16_t angle_double_row_disc(char character) {
   return angle;
 }
 
-void translate_char_on_disc(uint8_t character) {
+void translate_char_on_disc(char character) {
 
   disk_angles_t braille_cell = {0, 0};
 
@@ -56,5 +56,5 @@ void translate_char_on_disc(uint8_t character) {
   braille_cell.single_row_disc = angle_single_row;
   braille_cell.double_row_disc = angle_double_row;
 
-  // move_to_angle(braille_cell);
+  move_to_angle(braille_cell);
 }

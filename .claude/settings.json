@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx ctx7@latest docs /doxygen/doxygen \"best practice comment block style for documenting C functions files structs and parameters\")",
+      "Bash(npx ctx7@latest docs /doxygen/doxygen \"brief and detailed description return retval note warning documenting structs enums and grouping members\")",
+      "Bash(doxygen --version)",
+      "Bash(grep -q '^/\\\\?docs/\\\\?$\\\\|^docs/$' .gitignore)"
+    ]
+  }
+}
