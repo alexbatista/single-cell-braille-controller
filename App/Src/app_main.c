@@ -4,6 +4,7 @@
 #include "motion_planner.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_uart.h"
+#include "usbd_cdc_if.h"
 
 // ----------------------------------------------------------------------------
 // Demo motion: both motors turn clockwise indefinitely at one full mechanical
@@ -17,8 +18,17 @@ void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02,
 }
 
 void App_run(void) {
-  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+  uint8_t c;
 
-  translate_char_on_disc('q');
-  // test_rotate_motor();
+  if (!CDC_ReadChar(&c)) {
+    return;
+  }
+
+  // Echo the byte straight back so the host terminal shows what arrived. This
+  // proves both USB directions before any motion is involved.
+  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+  CDC_Transmit_FS(&c, 1u);
+
+  // Once the echo is confirmed, drive the disc from the received character:
+  translate_char_on_disc(c);
 }

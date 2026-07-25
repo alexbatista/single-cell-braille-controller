@@ -25,6 +25,10 @@ Read them in order the first time; after that, use them as reference.
 5. **[05-is-it-overengineered.md](05-is-it-overengineered.md)** — a direct,
    evidence-based answer to "is this too abstracted for what it does,"
    including the two places where the answer is genuinely "a little, yes."
+6. **[06-usb-cdc.md](06-usb-cdc.md)** — the USB virtual-COM-port path: why
+   `Middlewares/` and `USB_DEVICE/` exist, how the stack was enabled, the full
+   interrupt call chain in both directions, and a line-by-line reading of
+   `CDC_Receive_FS` / `CDC_Transmit_FS` / `CDC_ReadChar` / `App_run`.
 
 ## Project map (for orientation)
 

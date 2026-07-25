@@ -4,7 +4,22 @@
       "Bash(npx ctx7@latest docs /doxygen/doxygen \"best practice comment block style for documenting C functions files structs and parameters\")",
       "Bash(npx ctx7@latest docs /doxygen/doxygen \"brief and detailed description return retval note warning documenting structs enums and grouping members\")",
       "Bash(doxygen --version)",
-      "Bash(grep -q '^/\\\\?docs/\\\\?$\\\\|^docs/$' .gitignore)"
+      "Bash(grep -q '^/\\\\?docs/\\\\?$\\\\|^docs/$' .gitignore)",
+      "Bash(ls -R App Core USB_DEVICE 2>/dev/null | head -60 && echo \"---LSUSB/TTY---\" && ls -l /dev/ttyACM* /dev/ttyUSB* 2>&1)",
+      "Read(//dev/**)",
+      "Bash(lsusb)",
+      "Bash(awk '/static uint8_t USBD_CDC_DataOut/,/^}/' Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)",
+      "Bash(awk '/uint8_t USBD_CDC_TransmitPacket/,/^}/' Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)",
+      "Bash(awk '/uint8_t USBD_CDC_ReceivePacket/,/^}/' Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)",
+      "Bash(awk '/static uint8_t  USBD_CDC_DataOut\\\\\\(USBD_HandleTypeDef \\\\*pdev,$/{f++} f==2,/^}$/' Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)",
+      "Bash(awk '/^uint8_t  USBD_CDC_TransmitPacket/,/^}$/' Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)",
+      "Bash(awk '/^uint8_t  USBD_CDC_ReceivePacket/,/^}$/' Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c)",
+      "Bash(awk '/void translate_char_on_disc/,/^}/' App/Src/braille_disc.c)",
+      "Bash(awk '/HAL_StatusTypeDef HAL_PCD_EP_Transmit/,/^}/' Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c)",
+      "Bash(git --no-pager diff --cached -- App/Src/app_main.c Core/Src/main.c Core/Src/stm32f1xx_it.c Core/Inc/stm32f1xx_it.h Core/Src/tim.c docs/README.md Core/Inc/stm32f1xx_hal_conf.h cmake/stm32cubemx/CMakeLists.txt .claude/settings.json)",
+      "Bash(git check-ignore *)",
+      "Bash(git --no-pager diff --cached -- single-cell-braille-controller.ioc)",
+      "Bash(git --no-pager log -4 --format='%s%n%b%n=====')"
     ]
   }
 }
