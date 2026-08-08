@@ -79,6 +79,10 @@ void Error_Handler(void);
 #define TX_TO_MOTOR02_GPIO_Port GPIOB
 #define RX_TO_MOTOR02_Pin GPIO_PIN_11
 #define RX_TO_MOTOR02_GPIO_Port GPIOB
+#define ZERO_MOTOR02_Pin GPIO_PIN_8
+#define ZERO_MOTOR02_GPIO_Port GPIOA
+#define ZERO_MOTOR01_Pin GPIO_PIN_9
+#define ZERO_MOTOR01_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

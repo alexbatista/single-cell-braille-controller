@@ -90,6 +90,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(ENABLE_MOTOR02_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : ZERO_MOTOR02_Pin ZERO_MOTOR01_Pin */
+  GPIO_InitStruct.Pin = ZERO_MOTOR02_Pin|ZERO_MOTOR01_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 2 */

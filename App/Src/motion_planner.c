@@ -8,11 +8,13 @@
 #include "stepper_hal.h"
 #include "motion_planner.h"
 #include "stm32f103xb.h"
+#include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_tim.h"
 #include "tmc2209.h"
 #include "tmc2209_stm32.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_uart.h"
+#include <stdint.h>
 
 // Each motor is a TMC2209 configured over its own UART and moved through its
 // STEP/DIR pins via the stepper module; both motors step in lockstep from
@@ -23,8 +25,8 @@
 #define APP_MICROSTEPS 8u
 #define APP_MICROSTEPS_PER_REV (APP_FULL_STEPS_PER_REV * APP_MICROSTEPS)
 #define APP_ROTATION_TIME_MS 1000u
-#define APP_RUN_CURRENT_PERCENT 40u
-#define APP_HOLD_CURRENT_PERCENT 40u
+#define APP_RUN_CURRENT_PERCENT 25u
+#define APP_HOLD_CURRENT_PERCENT 25u
 
 // Step rate that turns the disc once per APP_ROTATION_TIME_MS.
 #define APP_STEP_RATE_HZ (APP_MICROSTEPS_PER_REV * 1000u / APP_ROTATION_TIME_MS)
@@ -148,13 +150,14 @@ void initialize_motors(UART_HandleTypeDef *huart_01,
 // Start a move of steps microsteps, negative meaning backwards. The pulses
 // are emitted by the STEP timer in the background; the caller waits with
 // wait_until_idle().
-static void start_move(Stepper_t *stepper, int32_t steps) {
+static void start_move(Stepper_t *stepper, int32_t steps,
+                       uint16_t step_rate_hz) {
   if (steps == 0) {
     return;
   }
   Stepper_SetDirection(stepper, steps > 0);
   Stepper_MoveSteps(stepper, (uint32_t)(steps > 0 ? steps : -steps),
-                    APP_STEP_RATE_HZ);
+                    step_rate_hz);
 }
 
 static void wait_until_idle(void) {
@@ -190,23 +193,47 @@ static int32_t steps_to_angle(Stepper_t const *stepper, uint16_t angle_tenths) {
 // they run concurrently, so the move takes as long as the slower disc.
 void move_to_angle(disk_angles_t disk_angle) {
   start_move(&stepper_motor_01,
-             steps_to_angle(&stepper_motor_01, disk_angle.single_row_disc));
+             steps_to_angle(&stepper_motor_01, disk_angle.single_row_disc),
+             APP_STEP_RATE_HZ);
   start_move(&stepper_motor_02,
-             steps_to_angle(&stepper_motor_02, disk_angle.double_row_disc));
+             steps_to_angle(&stepper_motor_02, disk_angle.double_row_disc),
+             APP_STEP_RATE_HZ);
   wait_until_idle();
 }
 
 // Turn both motors one full revolution over APP_ROTATION_TIME_MS, blocking.
 // clockwise maps to DIR high; if a motor spins the other way, swap one of
 // its coil pairs or use tmc2209_enable_inverse_motor_direction().
-static void rotate_one_revolution(bool clockwise) {
+static void rotate_one_revolution(bool clockwise, uint16_t step_rate_hz) {
   int32_t const steps = clockwise ? (int32_t)APP_MICROSTEPS_PER_REV
                                   : -(int32_t)APP_MICROSTEPS_PER_REV;
-  start_move(&stepper_motor_01, steps);
-  start_move(&stepper_motor_02, steps);
+  start_move(&stepper_motor_01, steps, step_rate_hz);
+  start_move(&stepper_motor_02, steps, step_rate_hz);
   wait_until_idle();
 }
 
-void test_rotate_motor() {
-  rotate_one_revolution(false);
+void calibrate_zero_position(void) {
+  while (HAL_GPIO_ReadPin(ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin) ==
+         GPIO_PIN_RESET) {
+    start_move(&stepper_motor_01, 1, APP_STEP_RATE_HZ / 20);
+    wait_until_idle();
+  }
+  HAL_Delay(1000);
+  while (HAL_GPIO_ReadPin(ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin) ==
+         GPIO_PIN_RESET) {
+    start_move(&stepper_motor_01, -1, APP_STEP_RATE_HZ / 800);
+    wait_until_idle();
+  }
+
+  while (HAL_GPIO_ReadPin(ZERO_MOTOR02_GPIO_Port, ZERO_MOTOR02_Pin) ==
+         GPIO_PIN_RESET) {
+    start_move(&stepper_motor_02, 1, APP_STEP_RATE_HZ / 20);
+    wait_until_idle();
+  }
+  HAL_Delay(1000);
+  while (HAL_GPIO_ReadPin(ZERO_MOTOR02_GPIO_Port, ZERO_MOTOR02_Pin) ==
+         GPIO_PIN_RESET) {
+    start_move(&stepper_motor_02, -1, APP_STEP_RATE_HZ / 800);
+    wait_until_idle();
+  }
 }

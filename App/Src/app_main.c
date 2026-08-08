@@ -15,10 +15,11 @@
 void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02,
               TIM_HandleTypeDef *htim_01, TIM_HandleTypeDef *htim_02) {
   initialize_motors(huart_01, huart_02, htim_01, htim_02);
+  calibrate_zero_position();
 }
 
 void App_run(void) {
-  uint8_t c;
+  uint8_t c; // One byte character buffer for user input
 
   if (!CDC_ReadChar(&c)) {
     return;
