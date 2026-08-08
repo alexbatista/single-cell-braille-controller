@@ -56,7 +56,7 @@ void initialize_motors(UART_HandleTypeDef *huart_01,
  * @brief Establish the zero reference for both discs.
  * @todo  Not implemented yet.
  */
-void Calibrate_Zero_Position(void);
+void calibrate_zero_position(void);
 
 /**
  * @brief Turn both discs to their absolute angles and block until they arrive.
