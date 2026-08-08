@@ -29,6 +29,11 @@ Read them in order the first time; after that, use them as reference.
    `Middlewares/` and `USB_DEVICE/` exist, how the stack was enabled, the full
    interrupt call chain in both directions, and a line-by-line reading of
    `CDC_Receive_FS` / `CDC_Transmit_FS` / `CDC_ReadChar` / `App_run`.
+7. **[07-character-encoding.md](07-character-encoding.md)** — how a keypress
+   becomes a disc angle: codepoints vs. bytes, why UTF-8 splits every accented
+   letter into two bytes, and every mask in the `braille_disc.c` decoder
+   explained in terms of characters instead of magic hex. Framed around the bug
+   where accented keys made both discs move out and snap back.
 
 ## Project map (for orientation)
 

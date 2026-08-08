@@ -65,17 +65,23 @@
 #define DISC2_ANGLE_TO_POS_ANG(WEIGHT) (WEIGHT * DISC_ANGLE_TO_POS_ANG_1)
 
 /**
- * @brief Render a character by turning both discs to its cell angles.
+ * @brief Feed one byte of the incoming UTF-8 stream and render it when a whole
+ *        character has arrived.
  *
- * Looks up each disc's weight for @p character, converts them to angles, and
- * drives the discs there.
+ * Call this once per byte received from the host, in order. ASCII renders
+ * immediately; a multi-byte character (the Portuguese accented letters arrive
+ * as two bytes) is buffered until its last byte, then rendered as one move.
+ * Bytes that complete nothing leave the discs where they are.
  *
- * @param character Character to display.
+ * @param byte Next byte received from the host, part of a UTF-8 stream.
  *
+ * @note Characters above U+00FF have no cell on these discs and render blank.
+ * @note The decoder keeps state between calls, so it is not reentrant: feed it
+ *       from one context only (the main loop, not an ISR).
  * @note The per-disc weight/angle helpers are implementation details of
  *       braille_disc.c and stay file-static there.
  */
-void translate_char_on_disc(uint8_t character);
+void translate_char_on_disc(uint8_t byte);
 
 /** @} */ // end of braille_disc
 

@@ -5,6 +5,9 @@
 // two rotating discs. The cell's 6 dots are stored once per character as a
 // bitmask (the single source of truth); each disc's "weight" is derived from
 // that mask and handed to the DISCx_ANGLE_TO_POS_ANG macros in braille_disc.h.
+//
+// Input arrives one byte at a time as a UTF-8 stream, so bytes are decoded into
+// a character code before any lookup happens.
 // ----------------------------------------------------------------------------
 
 #include "braille_disc.h"
@@ -26,11 +29,12 @@
  * @brief Braille dot pattern for each character (single source of truth).
  *
  * One 6-dot bitmask per character; each row is directly verifiable against a
- * braille chart. Indexed by the raw input byte interpreted as ISO-8859-1
- * (Latin-1). A-Z use ASCII char-literal indices; the Portuguese accented
- * letters use explicit Latin-1 hex byte indices (not accented char literals)
- * so this file stays UTF-8-clean and needs no -fexec-charset. Any byte not
- * listed stays 0 => blank cell. Cost: ~256 B flash, 0 B RAM.
+ * braille chart. Indexed by the character code in ISO-8859-1 (Latin-1), which
+ * for U+0000..U+00FF is the Unicode codepoint itself. A-Z use ASCII
+ * char-literal indices; the Portuguese accented letters use explicit Latin-1
+ * hex indices (not accented char literals) so this file stays UTF-8-clean and
+ * needs no -fexec-charset. Any code not listed stays 0 => blank cell.
+ * Cost: ~256 B flash, 0 B RAM.
  *
  * Patterns follow the Brazilian standard "Grafia Braille para a Lingua
  * Portuguesa" (IBC/MEC).
@@ -79,15 +83,14 @@ static const uint8_t braille_pattern[256] = {
 };
 
 /**
- * @brief Map a raw input byte to its braille dot pattern (case-insensitive).
+ * @brief Map a Latin-1 character code to its braille dot pattern
+ *        (case-insensitive).
  *
- * The single seam where the input encoding lives: lowercase (ASCII and
- * Latin-1 accented) is folded to uppercase, then looked up. Swapping the
- * encoding strategy later (e.g. UTF-8 codepoints) touches only this body,
- * never the @ref braille_pattern data.
+ * The single seam where the character encoding lives: lowercase (ASCII and
+ * Latin-1 accented) is folded to uppercase, then looked up.
  *
- * @param c Input byte, interpreted as ISO-8859-1.
- * @return 6-dot bitmask (DOTx flags); 0 for any unmapped byte (blank cell).
+ * @param c Character code in 0..255, i.e. a Unicode codepoint U+0000..U+00FF.
+ * @return 6-dot bitmask (DOTx flags); 0 for any unmapped code (blank cell).
  */
 static uint8_t pattern_for_char(uint8_t c) {
   if (c >= 'a' && c <= 'z') {
@@ -96,6 +99,66 @@ static uint8_t pattern_for_char(uint8_t c) {
     c -= 0x20; // Latin-1 accented lower -> upper (0xF7 is division sign, skip)
   }
   return braille_pattern[c];
+}
+
+// ---- Input encoding: UTF-8 stream -> character code -------------------------
+// The host terminal speaks UTF-8, so an accented letter arrives as more than
+// one byte (c-cedilla is 0xC3 0xA7). Rendering each byte on its own made every
+// accented key turn the discs twice: 0xC3 alone is A-tilde in Latin-1, and the
+// continuation byte is unmapped, so the cell snapped to that letter and then
+// straight back to blank.
+//
+// Decoding is cheap because the pattern table is indexed by Latin-1, which for
+// U+0000..U+00FF *is* the codepoint: rebuild the codepoint, keep its low byte.
+// Codepoints above U+00FF have no cell on these discs and render blank.
+
+/** @brief Returned while a sequence is still incomplete (or was malformed). */
+#define UTF8_INCOMPLETE 0xFFFFFFFFu
+
+static uint32_t utf8_codepoint;      /**< bits gathered from the sequence   */
+static uint8_t utf8_bytes_remaining; /**< continuation bytes still expected */
+
+/**
+ * @brief Feed one byte of a UTF-8 stream to the decoder.
+ *
+ * Malformed input never leaves the decoder stuck: a lead byte followed by
+ * anything other than a continuation byte restarts decoding from that byte.
+ *
+ * @param byte Next byte received from the host.
+ * @return The decoded codepoint, or @ref UTF8_INCOMPLETE while the current
+ *         sequence still needs more bytes (nothing to render yet).
+ */
+static uint32_t utf8_decode_byte(uint8_t byte) {
+  if (byte < 0x80u) { // ASCII: a whole character on its own
+    utf8_bytes_remaining = 0u;
+    return byte;
+  }
+
+  if ((byte & 0xC0u) == 0x80u) { // continuation byte: 10xxxxxx
+    if (utf8_bytes_remaining == 0u) {
+      return UTF8_INCOMPLETE; // stray byte with no lead: drop it
+    }
+    utf8_codepoint = (utf8_codepoint << 6) | (byte & 0x3Fu);
+    if (--utf8_bytes_remaining != 0u) {
+      return UTF8_INCOMPLETE;
+    }
+    return utf8_codepoint;
+  }
+
+  // Lead byte: its high bits say how many continuation bytes follow.
+  if ((byte & 0xE0u) == 0xC0u) { // 110xxxxx
+    utf8_codepoint = byte & 0x1Fu;
+    utf8_bytes_remaining = 1u;
+  } else if ((byte & 0xF0u) == 0xE0u) { // 1110xxxx
+    utf8_codepoint = byte & 0x0Fu;
+    utf8_bytes_remaining = 2u;
+  } else if ((byte & 0xF8u) == 0xF0u) { // 11110xxx
+    utf8_codepoint = byte & 0x07u;
+    utf8_bytes_remaining = 3u;
+  } else {
+    utf8_bytes_remaining = 0u; // 0xF8..0xFF are never valid UTF-8
+  }
+  return UTF8_INCOMPLETE;
 }
 
 // ---- Disc 2 geometry -------------------------------------------------------
@@ -163,7 +226,16 @@ static uint16_t angle_double_row_disc(uint8_t character) {
   return angle;
 }
 
-void translate_char_on_disc(uint8_t character) {
+void translate_char_on_disc(uint8_t byte) {
+
+  uint32_t codepoint = utf8_decode_byte(byte);
+  if (codepoint == UTF8_INCOMPLETE) {
+    return; // mid-sequence: no character to render yet, discs stay put
+  }
+
+  // Outside Latin-1 there is no cell for the character, so render a blank one
+  // rather than aliasing it onto some other letter.
+  uint8_t character = (codepoint <= 0xFFu) ? (uint8_t)codepoint : 0u;
 
   disk_angles_t braille_cell = {0, 0};
 
