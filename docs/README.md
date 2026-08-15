@@ -32,8 +32,10 @@ Read them in order the first time; after that, use them as reference.
 7. **[07-character-encoding.md](07-character-encoding.md)** — how a keypress
    becomes a disc angle: codepoints vs. bytes, why UTF-8 splits every accented
    letter into two bytes, and every mask in the `braille_disc.c` decoder
-   explained in terms of characters instead of magic hex. Framed around the bug
-   where accented keys made both discs move out and snap back.
+   explained in terms of characters instead of magic hex. Covers why the bytes
+   can't go straight to the pattern table, what the decoder keeps between calls,
+   and why a sequence can decode cleanly and still be rejected as illegal
+   (overlongs, surrogates, codepoints past U+10FFFF).
 
 ## Project map (for orientation)
 
