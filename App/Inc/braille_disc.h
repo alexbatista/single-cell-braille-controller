@@ -76,6 +76,10 @@
  * @param byte Next byte received from the host, part of a UTF-8 stream.
  *
  * @note Characters above U+00FF have no cell on these discs and render blank.
+ * @note Malformed input renders nothing at all and the discs stay put. That
+ *       covers invalid encodings as well as truncated ones: overlong forms,
+ *       surrogate halves and codepoints past U+10FFFF are dropped rather than
+ *       aliased onto the character they would otherwise decode to.
  * @note The decoder keeps state between calls, so it is not reentrant: feed it
  *       from one context only (the main loop, not an ISR).
  * @note The per-disc weight/angle helpers are implementation details of

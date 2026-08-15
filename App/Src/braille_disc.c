@@ -103,10 +103,11 @@ static uint8_t pattern_for_char(uint8_t c) {
 
 // ---- Input encoding: UTF-8 stream -> character code -------------------------
 // The host terminal speaks UTF-8, so an accented letter arrives as more than
-// one byte (c-cedilla is 0xC3 0xA7). Rendering each byte on its own made every
-// accented key turn the discs twice: 0xC3 alone is A-tilde in Latin-1, and the
-// continuation byte is unmapped, so the cell snapped to that letter and then
-// straight back to blank.
+// one byte (c-cedilla is 0xC3 0xA7). The bytes cannot be rendered one at a
+// time: 0xC3 alone is A-tilde in Latin-1 and the continuation byte is unmapped,
+// so a per-byte renderer would drive the cell to that letter and then straight
+// back to blank for every accented key. The sequence has to be reassembled
+// before anything is looked up.
 //
 // Decoding is cheap because the pattern table is indexed by Latin-1, which for
 // U+0000..U+00FF *is* the codepoint: rebuild the codepoint, keep its low byte.
@@ -115,7 +116,16 @@ static uint8_t pattern_for_char(uint8_t c) {
 /** @brief Returned while a sequence is still incomplete (or was malformed). */
 #define UTF8_INCOMPLETE 0xFFFFFFFFu
 
+/** @brief Highest codepoint Unicode defines; longer sequences encode nothing. */
+#define UTF8_MAX_CODEPOINT 0x10FFFFu
+
+/** @name UTF-16 surrogate half range, which UTF-8 must never encode. @{ */
+#define UTF8_SURROGATE_FIRST 0xD800u
+#define UTF8_SURROGATE_LAST 0xDFFFu
+/** @} */
+
 static uint32_t utf8_codepoint;      /**< bits gathered from the sequence   */
+static uint32_t utf8_min_codepoint;  /**< smallest value this length may hold */
 static uint8_t utf8_bytes_remaining; /**< continuation bytes still expected */
 
 /**
@@ -124,9 +134,20 @@ static uint8_t utf8_bytes_remaining; /**< continuation bytes still expected */
  * Malformed input never leaves the decoder stuck: a lead byte followed by
  * anything other than a continuation byte restarts decoding from that byte.
  *
+ * A completed sequence is only reported once it is a *valid* encoding. UTF-8
+ * gives every codepoint exactly one spelling, so three families of sequence
+ * are rejected even though their bits decode cleanly:
+ *  - overlong forms, which spell a short codepoint in a longer sequence
+ *    (0xC1 0x81 would otherwise alias to 'A' and skip the ASCII fast path);
+ *  - the UTF-16 surrogate halves U+D800..U+DFFF, which are not characters;
+ *  - anything past U+10FFFF, which Unicode does not define.
+ * Each is dropped like any other malformed input: nothing renders, and the
+ * next lead byte starts a fresh sequence.
+ *
  * @param byte Next byte received from the host.
  * @return The decoded codepoint, or @ref UTF8_INCOMPLETE while the current
- *         sequence still needs more bytes (nothing to render yet).
+ *         sequence still needs more bytes, or when it turned out invalid
+ *         (nothing to render either way).
  */
 static uint32_t utf8_decode_byte(uint8_t byte) {
   if (byte < 0x80u) { // ASCII: a whole character on its own
@@ -142,18 +163,28 @@ static uint32_t utf8_decode_byte(uint8_t byte) {
     if (--utf8_bytes_remaining != 0u) {
       return UTF8_INCOMPLETE;
     }
+    if (utf8_codepoint < utf8_min_codepoint || // overlong for this length
+        (utf8_codepoint >= UTF8_SURROGATE_FIRST &&
+         utf8_codepoint <= UTF8_SURROGATE_LAST) ||
+        utf8_codepoint > UTF8_MAX_CODEPOINT) {
+      return UTF8_INCOMPLETE; // decodes cleanly but is not a valid encoding
+    }
     return utf8_codepoint;
   }
 
-  // Lead byte: its high bits say how many continuation bytes follow.
+  // Lead byte: its high bits say how many continuation bytes follow, and the
+  // length fixes the smallest codepoint the sequence is allowed to carry.
   if ((byte & 0xE0u) == 0xC0u) { // 110xxxxx
     utf8_codepoint = byte & 0x1Fu;
+    utf8_min_codepoint = 0x80u;
     utf8_bytes_remaining = 1u;
   } else if ((byte & 0xF0u) == 0xE0u) { // 1110xxxx
     utf8_codepoint = byte & 0x0Fu;
+    utf8_min_codepoint = 0x800u;
     utf8_bytes_remaining = 2u;
   } else if ((byte & 0xF8u) == 0xF0u) { // 11110xxx
     utf8_codepoint = byte & 0x07u;
+    utf8_min_codepoint = 0x10000u;
     utf8_bytes_remaining = 3u;
   } else {
     utf8_bytes_remaining = 0u; // 0xF8..0xFF are never valid UTF-8
