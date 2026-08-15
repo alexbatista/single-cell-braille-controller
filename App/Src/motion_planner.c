@@ -201,17 +201,6 @@ void move_to_angle(disk_angles_t disk_angle) {
   wait_until_idle();
 }
 
-// Turn both motors one full revolution over APP_ROTATION_TIME_MS, blocking.
-// clockwise maps to DIR high; if a motor spins the other way, swap one of
-// its coil pairs or use tmc2209_enable_inverse_motor_direction().
-static void rotate_one_revolution(bool clockwise, uint16_t step_rate_hz) {
-  int32_t const steps = clockwise ? (int32_t)APP_MICROSTEPS_PER_REV
-                                  : -(int32_t)APP_MICROSTEPS_PER_REV;
-  start_move(&stepper_motor_01, steps, step_rate_hz);
-  start_move(&stepper_motor_02, steps, step_rate_hz);
-  wait_until_idle();
-}
-
 void calibrate_zero_position(void) {
   while (HAL_GPIO_ReadPin(ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin) ==
          GPIO_PIN_RESET) {
