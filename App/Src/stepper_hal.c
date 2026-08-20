@@ -85,7 +85,9 @@ static void pulse_train_stop(void *ctx) {
 
 static void dir_write(void *ctx, bool level) {
   Stepper_Hal_Stm32_t *port = ctx;
-  gpio_write(port->dir_port, port->dir_pin, level);
+  // A mirrored motor is corrected at the pin, so every layer above still
+  // counts positive steps as increasing angle.
+  gpio_write(port->dir_port, port->dir_pin, port->invert_dir ? !level : level);
 }
 
 static void enable_write(void *ctx, bool enable) {
@@ -97,11 +99,13 @@ static void enable_write(void *ctx, bool enable) {
 void Stepper_Hal_Stm32_Init(Stepper_Hal_Stm32_t *port, Stepper_Hal_t *hal,
                             TIM_HandleTypeDef *step_tim, uint32_t step_channel,
                             GPIO_TypeDef *dir_port, uint16_t dir_pin,
-                            GPIO_TypeDef *enable_port, uint16_t enable_pin) {
+                            bool invert_dir, GPIO_TypeDef *enable_port,
+                            uint16_t enable_pin) {
   port->step_tim = step_tim;
   port->step_channel = step_channel;
   port->dir_port = dir_port;
   port->dir_pin = dir_pin;
+  port->invert_dir = invert_dir;
   port->enable_port = enable_port;
   port->enable_pin = enable_pin;
 

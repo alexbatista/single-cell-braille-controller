@@ -39,6 +39,12 @@
 // register write.
 #define APP_DRIVER_POWER_UP_MS 200u
 
+// Both discs are geared so that the direction the TMC2209 calls forward turns
+// them towards *decreasing* braille weight. The stepper port flips DIR for
+// them, so everything above it keeps counting positive steps as increasing
+// angle. Set this false for a motor rebuilt with the rotation the other way.
+#define APP_MOTOR_DIR_INVERTED true
+
 // LED blink codes: each motor reports faults as its own number in the
 // schematic.
 #define APP_MOTOR_01_BLINK_CODE 1u
@@ -120,7 +126,7 @@ static void motor_stepper_init(Stepper_t *stepper,
                                uint16_t dir_pin) {
   Stepper_Hal_t hal;
   Stepper_Hal_Stm32_Init(stepper_port, &hal, step_tim, step_channel, dir_port,
-                         dir_pin, NULL, 0u);
+                         dir_pin, APP_MOTOR_DIR_INVERTED, NULL, 0u);
   Stepper_Init(stepper, &hal);
 }
 
@@ -269,12 +275,14 @@ void move_to_angle(disk_angles_t disk_angle) {
 // not to sit on the disc's pattern origin.
 #define APP_ZERO_POSITION_STEPS 0
 
-// Travel of a single homing step, in microsteps. Every flag edge is detected
-// while turning in ::APP_HOMING_SEARCH_DIR, so the trigger point does not
-// depend on which way the disc came from; the opposite direction is only used
-// to leave the flag.
-#define APP_HOMING_SEARCH_DIR (-1)
-#define APP_HOMING_BACKOFF_DIR (1)
+// Travel of a single homing step, in microsteps, in the planner's own frame
+// (positive = increasing angle; the port maps that onto the DIR pin). Every
+// flag edge is detected while turning in ::APP_HOMING_SEARCH_DIR, so the
+// trigger point does not depend on which way the disc came from; the opposite
+// direction is only used to leave the flag. Swapping the two signs reverses
+// the physical sweep, which parks zero on the other edge of the flag.
+#define APP_HOMING_SEARCH_DIR (1)
+#define APP_HOMING_BACKOFF_DIR (-1)
 
 // Step <stepper> one microstep at a time in <dir> until the sensor on
 // <port>/<pin> reads <level>, at most <max_steps> microsteps. Returns false
