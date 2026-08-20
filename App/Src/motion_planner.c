@@ -28,8 +28,27 @@
 #define APP_RUN_CURRENT_PERCENT 25u
 #define APP_HOLD_CURRENT_PERCENT 25u
 
+// Unit conversion, so the rates below read as "one revolution per <time>".
+#define APP_MS_PER_S 1000u
+
 // Step rate that turns the disc once per APP_ROTATION_TIME_MS.
-#define APP_STEP_RATE_HZ (APP_MICROSTEPS_PER_REV * 1000u / APP_ROTATION_TIME_MS)
+#define APP_STEP_RATE_HZ                                                       \
+  (APP_MICROSTEPS_PER_REV * APP_MS_PER_S / APP_ROTATION_TIME_MS)
+
+// Settling time the TMC2209 needs after its UART is bound, before the first
+// register write.
+#define APP_DRIVER_POWER_UP_MS 200u
+
+// LED blink codes: each motor reports faults as its own number in the
+// schematic.
+#define APP_MOTOR_01_BLINK_CODE 1u
+#define APP_MOTOR_02_BLINK_CODE 2u
+
+// Shape of a blink code: <code> short blinks, a long gap, repeated.
+#define APP_WARNING_BURSTS 3u
+#define APP_WARNING_ON_MS 100u
+#define APP_WARNING_OFF_MS 200u
+#define APP_WARNING_GAP_MS 800u
 
 // Disc angles are expressed in tenths of a degree (see disk_angles_t).
 #define APP_ANGLE_TENTHS_PER_REV 3600u
@@ -57,7 +76,7 @@ static bool motor_driver_init(tmc2209_t *tmc, tmc2209_stm32_t *tmc_port,
                               uint16_t enable_pin) {
   tmc2209_hal_t hal;
   tmc2209_stm32_hal_init(tmc_port, &hal, usart, enable_port, enable_pin);
-  HAL_Delay(200u);
+  HAL_Delay(APP_DRIVER_POWER_UP_MS);
   tmc2209_setup(tmc, &hal, TMC2209_SERIAL_ADDRESS_0);
 
   // tmc2209_setup() leaves automatic current scaling off; in stealthChop
@@ -76,20 +95,18 @@ static bool motor_driver_init(tmc2209_t *tmc, tmc2209_stm32_t *tmc_port,
   return tmc2209_is_setup_and_communicating(tmc);
 }
 
-// Warn, without halting, when a TMC2209 does not answer over UART:
-// <motor_index> short blinks, long pause, three times, then continue. The
-// configuration commands are all write-only, so the motor still runs; only
-// read-back verification and diagnostics are lost. To fix it, check the
-// PDN_UART wiring: TX through ~1k into PDN_UART, RX tied directly to it.
-static void motor_comm_warning(uint32_t motor_index) {
-  for (uint32_t burst = 0u; burst < 3u; ++burst) {
-    for (uint32_t i = 0u; i < motor_index; ++i) {
+// Report a startup fault without halting: <blinks> short blinks, a long
+// pause, three times over, then carry on. Every caller passes the motor index
+// so the pattern says which motor is affected.
+static void blink_warning(uint32_t blinks) {
+  for (uint32_t burst = 0u; burst < APP_WARNING_BURSTS; ++burst) {
+    for (uint32_t i = 0u; i < blinks; ++i) {
       HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-      HAL_Delay(100u);
+      HAL_Delay(APP_WARNING_ON_MS);
       HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-      HAL_Delay(200u);
+      HAL_Delay(APP_WARNING_OFF_MS);
     }
-    HAL_Delay(800u);
+    HAL_Delay(APP_WARNING_GAP_MS);
   }
 }
 
@@ -128,13 +145,17 @@ void initialize_motors(UART_HandleTypeDef *huart_01,
   HAL_GPIO_WritePin(ENABLE_MOTOR01_GPIO_Port, ENABLE_MOTOR01_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(ENABLE_MOTOR02_GPIO_Port, ENABLE_MOTOR02_Pin, GPIO_PIN_SET);
 
+  // A driver that does not answer over UART still turns: the configuration
+  // commands are all write-only, so only read-back verification and
+  // diagnostics are lost. To fix it, check the PDN_UART wiring: TX through
+  // ~1k into PDN_UART, RX tied directly to it.
   if (!motor_driver_init(&tmc_motor_01, &tmc_port_motor_01, huart_01->Instance,
                          ENABLE_MOTOR01_GPIO_Port, ENABLE_MOTOR01_Pin)) {
-    motor_comm_warning(1u);
+    blink_warning(APP_MOTOR_01_BLINK_CODE);
   }
   if (!motor_driver_init(&tmc_motor_02, &tmc_port_motor_02, huart_02->Instance,
                          ENABLE_MOTOR02_GPIO_Port, ENABLE_MOTOR02_Pin)) {
-    motor_comm_warning(2u);
+    blink_warning(APP_MOTOR_02_BLINK_CODE);
   }
 
   motor_stepper_init(&stepper_motor_01, &stepper_hal_motor_01, htim_01,
@@ -201,28 +222,122 @@ void move_to_angle(disk_angles_t disk_angle) {
   wait_until_idle();
 }
 
-void calibrate_zero_position(void) {
-  while (HAL_GPIO_ReadPin(ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin) ==
-         GPIO_PIN_RESET) {
-    start_move(&stepper_motor_01, 1, APP_STEP_RATE_HZ / 20);
-    wait_until_idle();
+// ----------------------------------------------------------------------------
+// Homing
+//
+// The ZERO sensors read high while a disc's flag sits over them. Every search
+// below is bounded in microsteps, so a disconnected sensor or a jammed disc
+// cannot spin forever inside App_init(), and the flag edge is always detected
+// while turning in the same direction, which keeps the sensor's hysteresis
+// out of the zero reference.
+// ----------------------------------------------------------------------------
+
+// A homing search covers at most a full revolution. Four seconds for that
+// turn keeps startup short while staying well inside the motor's torque, and
+// because the sensor is sampled once per microstep it costs no accuracy.
+#define APP_HOMING_SEARCH_TIME_MS 4000u
+#define APP_HOMING_SEEK_RATE_HZ                                                \
+  (APP_MICROSTEPS_PER_REV * APP_MS_PER_S / APP_HOMING_SEARCH_TIME_MS)
+
+// Final approach speed. The STEP timers cannot express much below one pulse
+// per full counter range (see pulse_train_start() in stepper_hal.c, roughly
+// 16 Hz with this clock tree), so keep clear of that floor.
+#define APP_HOMING_FINE_RATE_HZ 25u
+
+// Angular slack allowed around the flag: how far the back-off may travel
+// looking for the sensor's release point, and the margin granted on top of a
+// full revolution before a search is declared lost. Expressed as an angle so
+// it survives a change of microstepping.
+#define APP_HOMING_SLACK_TENTHS 450u
+#define APP_HOMING_SLACK_STEPS                                                 \
+  (APP_HOMING_SLACK_TENTHS * APP_MICROSTEPS_PER_REV / APP_ANGLE_TENTHS_PER_REV)
+
+// A search that has turned a disc a full revolution plus the slack has missed
+// the flag: the sensor is dead, miswired, or the disc is jammed.
+#define APP_HOMING_SEARCH_STEPS                                                \
+  (APP_MICROSTEPS_PER_REV + APP_HOMING_SLACK_STEPS)
+
+// The final approach has to undo whatever the back-off travelled and still
+// reach the edge, so it gets the back-off budget over again.
+#define APP_HOMING_APPROACH_STEPS (APP_HOMING_SLACK_STEPS * 2u)
+
+// Settling time between reversing direction and the final approach.
+#define APP_HOMING_SETTLE_MS 50u
+
+// Position assigned to a disc parked on its flag, i.e. the microstep that
+// steps_to_angle() treats as angle 0. Make this non-zero if a flag turns out
+// not to sit on the disc's pattern origin.
+#define APP_ZERO_POSITION_STEPS 0
+
+// Travel of a single homing step, in microsteps. Every flag edge is detected
+// while turning in ::APP_HOMING_SEARCH_DIR, so the trigger point does not
+// depend on which way the disc came from; the opposite direction is only used
+// to leave the flag.
+#define APP_HOMING_SEARCH_DIR (-1)
+#define APP_HOMING_BACKOFF_DIR (1)
+
+// Step <stepper> one microstep at a time in <dir> until the sensor on
+// <port>/<pin> reads <level>, at most <max_steps> microsteps. Returns false
+// only when that budget ran out with the sensor still in the other state.
+static bool seek_sensor(Stepper_t *stepper, GPIO_TypeDef *port, uint16_t pin,
+                        GPIO_PinState level, int32_t dir, uint16_t rate_hz,
+                        uint32_t max_steps) {
+  while (HAL_GPIO_ReadPin(port, pin) != level) {
+    if (max_steps == 0u) {
+      return false;
+    }
+    --max_steps;
+    start_move(stepper, dir, rate_hz);
+    // Only this disc is moving, so wait on it alone rather than on both.
+    while (Stepper_IsBusy(stepper)) {
+    }
   }
-  HAL_Delay(1000);
-  while (HAL_GPIO_ReadPin(ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin) ==
-         GPIO_PIN_RESET) {
-    start_move(&stepper_motor_01, -1, APP_STEP_RATE_HZ / 800);
-    wait_until_idle();
+  return true;
+}
+
+// Bring one disc onto its zero flag, parked on the edge that
+// ::APP_HOMING_SEARCH_DIR reaches first. The caller assigns the position.
+static bool home_disc(Stepper_t *stepper, GPIO_TypeDef *port, uint16_t pin) {
+  // Walk off the flag first. A disc that powers up over its sensor would
+  // otherwise be zeroed wherever inside the sensor window it happened to
+  // stop, an error as wide as the flag itself.
+  if (!seek_sensor(stepper, port, pin, GPIO_PIN_RESET, APP_HOMING_SEARCH_DIR,
+                   APP_HOMING_SEEK_RATE_HZ, APP_HOMING_SEARCH_STEPS)) {
+    return false;
+  }
+  // Search for the flag.
+  if (!seek_sensor(stepper, port, pin, GPIO_PIN_SET, APP_HOMING_SEARCH_DIR,
+                   APP_HOMING_SEEK_RATE_HZ, APP_HOMING_SEARCH_STEPS)) {
+    return false;
+  }
+  // Back off until the sensor releases, then creep onto that same edge again
+  // from the same side, so the trigger point does not depend on how fast the
+  // disc arrived.
+  if (!seek_sensor(stepper, port, pin, GPIO_PIN_RESET, APP_HOMING_BACKOFF_DIR,
+                   APP_HOMING_SEEK_RATE_HZ, APP_HOMING_SLACK_STEPS)) {
+    return false;
+  }
+  HAL_Delay(APP_HOMING_SETTLE_MS);
+  return seek_sensor(stepper, port, pin, GPIO_PIN_SET, APP_HOMING_SEARCH_DIR,
+                     APP_HOMING_FINE_RATE_HZ, APP_HOMING_APPROACH_STEPS);
+}
+
+bool calibrate_zero_position(void) {
+  bool homed = true;
+
+  if (home_disc(&stepper_motor_01, ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin)) {
+    Stepper_SetPosition(&stepper_motor_01, APP_ZERO_POSITION_STEPS);
+  } else {
+    blink_warning(APP_MOTOR_01_BLINK_CODE);
+    homed = false;
   }
 
-  while (HAL_GPIO_ReadPin(ZERO_MOTOR02_GPIO_Port, ZERO_MOTOR02_Pin) ==
-         GPIO_PIN_RESET) {
-    start_move(&stepper_motor_02, 1, APP_STEP_RATE_HZ / 20);
-    wait_until_idle();
+  if (home_disc(&stepper_motor_02, ZERO_MOTOR02_GPIO_Port, ZERO_MOTOR02_Pin)) {
+    Stepper_SetPosition(&stepper_motor_02, APP_ZERO_POSITION_STEPS);
+  } else {
+    blink_warning(APP_MOTOR_02_BLINK_CODE);
+    homed = false;
   }
-  HAL_Delay(1000);
-  while (HAL_GPIO_ReadPin(ZERO_MOTOR02_GPIO_Port, ZERO_MOTOR02_Pin) ==
-         GPIO_PIN_RESET) {
-    start_move(&stepper_motor_02, -1, APP_STEP_RATE_HZ / 800);
-    wait_until_idle();
-  }
+
+  return homed;
 }

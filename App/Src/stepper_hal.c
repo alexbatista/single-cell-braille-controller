@@ -2,6 +2,22 @@
 
 #include <stddef.h>
 
+// TIM2 and TIM3 are 16-bit timers: ARR and CCR only hold 0..65535, so one
+// pulse every 2^16 ticks is the longest period the hardware can express.
+#define STEP_TIMER_COUNTER_BITS 16u
+#define STEP_TIMER_MAX_PERIOD_TICKS (1uL << STEP_TIMER_COUNTER_BITS)
+
+// Shortest period that still leaves a high time to pulse with.
+#define STEP_TIMER_MIN_PERIOD_TICKS 2u
+
+// STEP runs at a 50% duty cycle: the compare match halfway through the period
+// ends the pulse, and that match is what raises the pulse callback.
+#define STEP_PULSE_DUTY_DIVISOR 2u
+
+// An APB1 prescaler other than 1 doubles the timer clock with respect to
+// PCLK1 (RM0008 clock tree).
+#define APB1_TIMER_CLOCK_MULTIPLIER 2u
+
 static void gpio_write(GPIO_TypeDef *gpio_port, uint16_t pin_mask, bool level) {
   if (level) {
     gpio_port->BSRR = pin_mask;
@@ -17,7 +33,7 @@ static void gpio_write(GPIO_TypeDef *gpio_port, uint16_t pin_mask, bool level) {
 static uint32_t timer_tick_hz(TIM_HandleTypeDef const *tim) {
   uint32_t tick_hz = HAL_RCC_GetPCLK1Freq();
   if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
-    tick_hz *= 2u;
+    tick_hz *= APB1_TIMER_CLOCK_MULTIPLIER;
   }
   return tick_hz / (tim->Instance->PSC + 1u);
 }
@@ -25,13 +41,23 @@ static uint32_t timer_tick_hz(TIM_HandleTypeDef const *tim) {
 static void pulse_train_start(void *ctx, uint32_t pulse_hz) {
   Stepper_Hal_Stm32_t *port = ctx;
 
-  // Two ticks is the shortest period that still leaves a high time; it caps
-  // the rate at half the timer tick rate rather than dividing by zero.
-  uint32_t const ticks = timer_tick_hz(port->step_tim) / pulse_hz;
-  uint32_t const period = (ticks > 2u) ? ticks : 2u;
+  // The lower clamp caps the rate at half the timer tick rate rather than
+  // dividing by zero. The upper clamp matters just as much: a rate slower
+  // than one pulse per full counter range wraps ARR and CCR independently and
+  // can land CCR above ARR, which never raises a compare match, so STEP would
+  // stay high and the pulse callback would never fire, hanging every caller
+  // that waits on Stepper_IsBusy(). Clamping turns that into a move that is
+  // merely slower than asked for.
+  uint32_t ticks = timer_tick_hz(port->step_tim) / pulse_hz;
+  if (ticks > STEP_TIMER_MAX_PERIOD_TICKS) {
+    ticks = STEP_TIMER_MAX_PERIOD_TICKS;
+  } else if (ticks < STEP_TIMER_MIN_PERIOD_TICKS) {
+    ticks = STEP_TIMER_MIN_PERIOD_TICKS;
+  }
 
-  __HAL_TIM_SET_AUTORELOAD(port->step_tim, period - 1u);
-  __HAL_TIM_SET_COMPARE(port->step_tim, port->step_channel, period / 2u);
+  __HAL_TIM_SET_AUTORELOAD(port->step_tim, ticks - 1u);
+  __HAL_TIM_SET_COMPARE(port->step_tim, port->step_channel,
+                        ticks / STEP_PULSE_DUTY_DIVISOR);
 
   // ARR and CCR are both preloaded (AutoReloadPreload in MX_TIMx_Init, OCxPE
   // set by HAL_TIM_PWM_ConfigChannel), so their shadow registers only load on
