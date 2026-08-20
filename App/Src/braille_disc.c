@@ -119,7 +119,10 @@ static uint8_t pattern_for_char(uint8_t c) {
 /** @brief Highest codepoint Unicode defines; longer sequences encode nothing. */
 #define UTF8_MAX_CODEPOINT 0x10FFFFu
 
-/** @name UTF-16 surrogate half range, which UTF-8 must never encode. @{ */
+/**
+ * @name UTF-16 surrogate half range, which UTF-8 must never encode.
+ * @{
+ */
 #define UTF8_SURROGATE_FIRST 0xD800u
 #define UTF8_SURROGATE_LAST 0xDFFFu
 /** @} */

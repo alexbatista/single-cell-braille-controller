@@ -205,7 +205,7 @@ That's the other lead byte you'll see in the wild for Latin-1-range text.)
 
 ## 5. Reading the decoder, constant by constant
 
-Now the code at [`braille_disc.c:152`](../App/Src/braille_disc.c#L152). Every
+Now the code at [`braille_disc.c:155`](../App/Src/braille_disc.c#L155). Every
 constant in this section is a **marker test** or a **payload mask**, never a
 letter. (The third kind — thresholds, which *are* codepoint values — belongs to
 the legality check and is covered in section 7.)
@@ -305,7 +305,7 @@ It covers **two** situations, and the caller treats them identically:
   complete sequence that failed the validity check in section 7.
 
 `translate_char_on_disc()` checks for the sentinel and **returns without moving
-the discs** ([`braille_disc.c:263`](../App/Src/braille_disc.c#L263)). That early
+the discs** ([`braille_disc.c:266`](../App/Src/braille_disc.c#L266)). That early
 return is what makes one keypress produce at most one movement: every byte that
 isn't the last byte of a valid character leaves the discs exactly where they
 are.
@@ -370,7 +370,7 @@ did 2 bytes arrive? Passing that test is necessary but **not sufficient**. Three
 families of sequence have perfectly well-formed markers and rebuild into a clean
 number, yet are still invalid UTF-8. The decoder checks for all three at the
 moment the last continuation byte lands
-([`braille_disc.c:166`](../App/Src/braille_disc.c#L166)).
+([`braille_disc.c:169`](../App/Src/braille_disc.c#L169)).
 
 ### (a) Overlong forms — the same letter spelled the long way
 
@@ -600,5 +600,8 @@ And the whole mechanism in one line:
   interrupt, the ring buffer, and `CDC_ReadChar()`.
 - **[02-execution-flow.md](02-execution-flow.md)** — how `App_run()` is reached
   from `main()`.
-- **[03-stepper-module.md](03-stepper-module.md)** — what happens *after* the
-  character is decoded and an angle is chosen.
+- **[08-motion-and-homing.md](08-motion-and-homing.md)** — what happens *after*
+  the character is decoded: how an angle becomes a shortest-path microstep move,
+  and where angle 0 comes from.
+- **[03-stepper-module.md](03-stepper-module.md)** — the layer below that: step
+  budgets, the hardware pulse train, and the position counter.

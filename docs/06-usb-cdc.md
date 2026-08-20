@@ -100,11 +100,14 @@ HSE 8 MHz → PLL ×6 → PLLCLK = 48 MHz → SYSCLK = HCLK = 48 MHz
                                    └──→ RCC_USBCLKSOURCE_PLL (÷1) = 48 MHz  ✔
 ```
 
-> ⚠️ **Note:** [02-execution-flow.md](02-execution-flow.md) still says
-> "PLL ×4 → SYSCLK = 32 MHz". That was true before USB was added and is now
-> stale — adding USB forced the jump to 48 MHz. Anything in the older guides
-> that derives a timing number from 32 MHz (timer prescalers, step rates) is
-> off by 1.5× and worth re-checking.
+> ⚠️ **Note:** this replaced an earlier "PLL ×4 → SYSCLK = 32 MHz" tree, so
+> treat any timing number you remember from before USB was added as off by
+> 1.5×. Everything downstream has been re-derived since:
+> [02-execution-flow.md](02-execution-flow.md) §2.2 works through the clock
+> tree, and `stepper_hal.c` computes the STEP timer's tick rate from the live
+> RCC registers rather than from a constant, precisely so a change like this
+> cannot silently rescale every step rate
+> ([03-stepper-module.md](03-stepper-module.md) §3.6).
 
 ### 6.2.3 In CMake
 
@@ -257,7 +260,7 @@ Two things fall straight out of this diagram:
   The existing implementation obeys this — it only copies bytes.
 - **`CDC_Transmit_FS` is asynchronous and can silently fail.** It returns
   `USBD_BUSY` if the previous packet hasn't been acknowledged yet, and
-  [app_main.c:30](../App/Src/app_main.c#L30) ignores the return value. Type
+  [app_main.c:33](../App/Src/app_main.c#L33) ignores the return value. Type
   fast and you'll lose echoed characters — not received ones.
 
 ---
@@ -290,7 +293,7 @@ arrives as 64 + 64 + 64 + 8 across four separate ISR calls.
 
 **Why a ring buffer at all.** `Buf` is only valid until you return — the next
 packet overwrites it. And you cannot do the real work here (a disc move takes
-seconds inside an ISR = dead device). So the ISR is the **producer** and
+up to half a second, and doing that inside an ISR = dead device). So the ISR is the **producer** and
 `App_run()` is the **consumer**, decoupled by a 64-byte FIFO.
 
 **Why `volatile`.** `cdc_rx_head`, `cdc_rx_tail` and the array are written by
@@ -309,8 +312,10 @@ the moment a second producer (another ISR) or second consumer appeared.
 permanently empty — that's the price of distinguishing "full" from "empty"
 with two indices, so the usable capacity is 63, not 64. New bytes are dropped
 rather than overwriting unread ones. That's the right choice for a command
-stream (old characters still matter), and given a disc move takes ~seconds,
-this buffer fills after ~63 fast keystrokes and then silently loses input.
+stream (old characters still matter). With up to ~half a second per disc move
+the buffer fills after ~63 keystrokes typed faster than the discs can render
+them — and much sooner if you type into the port while startup homing is still
+running — after which input is silently lost.
 
 **The two lines at the end are the important ones.** Read the doc comment ST
 left above the function: *"This function will issue a NAK packet on any OUT
@@ -367,13 +372,21 @@ point where blocking is legal.
 
 That said, its timing shapes the *behaviour* you observe:
 
-- `translate_char_on_disc(c)` → `move_to_angle()` blocks for seconds
-  (`HAL_Delay()` calls plus a `while (Stepper_IsBusy(...))` spin in
-  [motion_planner.c](../App/Src/motion_planner.c#L161)). During that time
+- `translate_char_on_disc(c)` → `move_to_angle()` blocks until both discs
+  have arrived — a `while (Stepper_IsBusy(...))` spin in `wait_until_idle()`
+  ([motion_planner.c](../App/Src/motion_planner.c#L190)). The planner always
+  takes the shortest path, so the worst case is half a revolution at 1600
+  microsteps/s: on the order of half a second per character. During that time
   `App_run()` never returns, so **no byte is consumed** — yet USB keeps
   receiving normally in the ISR, filling the ring behind your back. That
   asymmetry (RX never stalls, processing does) is the whole reason the ring
   buffer exists.
+- The same asymmetry, much larger, applies at startup. `MX_USB_DEVICE_Init()`
+  runs *before* `App_init()`, so the host can enumerate the port and you can
+  type into it while the discs are still homing — several seconds during which
+  the ISR fills the ring and nothing drains it. Whatever you typed is rendered,
+  in order, once homing finishes. See
+  [08-motion-and-homing.md](08-motion-and-homing.md).
 - One byte per `App_run()` call. A drain loop
   (`while (CDC_ReadChar(&c)) { … }`) would be wrong here on purpose: you
   *want* one disc move per iteration, not a burst.
@@ -516,18 +529,15 @@ Ordered by how much they matter:
 
 1. **Check the `CDC_Transmit_FS` return value** in `App_run()`. Today a busy
    endpoint silently swallows the echo.
-2. **Commit `Middlewares/` and `USB_DEVICE/`.** They're untracked; the build
-   depends on them.
-3. **Update the 32 MHz claim** in `02-execution-flow.md` and re-check any timer
-   math derived from it — the clock is 48 MHz now.
-4. **Reclaim ~1 KB of RAM** by shrinking `APP_TX_DATA_SIZE`, since
+2. **Reclaim ~1 KB of RAM** by shrinking `APP_TX_DATA_SIZE`, since
    `UserTxBufferFS` is never used. (Keep `APP_RX_DATA_SIZE` ≥ 64.)
-5. **Add a NULL check on `pClassData`** in `CDC_Transmit_FS` before you ever
+3. **Add a NULL check on `pClassData`** in `CDC_Transmit_FS` before you ever
    transmit un-prompted.
-6. **Backpressure:** with ~seconds per disc move, decide what "too fast" means
-   — drop (today), or send an XOFF / "busy" byte back to the host when the ring
-   is over half full.
-7. **Experiment to confirm the ISR/loop split for yourself:** put a
+4. **Backpressure:** with up to ~half a second per disc move — and several
+   seconds while homing runs at startup — decide what "too fast" means: drop
+   (today), or send an XOFF / "busy" byte back to the host when the ring is
+   over half full.
+5. **Experiment to confirm the ISR/loop split for yourself:** put a
    `HAL_Delay(3000)` at the top of `App_run()` and hold a key down. The
    characters still get received (the ring fills) and echo out late in a burst —
    proof that reception doesn't depend on the loop.
@@ -535,4 +545,5 @@ Ordered by how much they matter:
 ---
 
 **Previous:** [05-is-it-overengineered.md](05-is-it-overengineered.md) ·
+**Next:** [07-character-encoding.md](07-character-encoding.md) ·
 **Index:** [README.md](README.md)
