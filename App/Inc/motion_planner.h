@@ -12,6 +12,7 @@
 #ifndef MOTION_PLANNER_H
 #define MOTION_PLANNER_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "stm32f1xx_hal.h"
@@ -54,9 +55,20 @@ void initialize_motors(UART_HandleTypeDef *huart_01,
 
 /**
  * @brief Establish the zero reference for both discs.
- * @todo  Not implemented yet.
+ *
+ * Homes each disc against its ZERO sensor and redefines that point as
+ * position 0, which is the angle 0 that move_to_angle() works from. Each disc
+ * walks off its flag, searches for it, then backs off and creeps onto the same
+ * edge from the same side, so the reference does not depend on where the disc
+ * powered up or how fast it arrived.
+ *
+ * Every search is bounded to roughly one revolution: a disc whose sensor never
+ * changes state is flagged with an LED blink pattern (its motor index) and
+ * leaves its position untouched instead of blocking startup forever.
+ *
+ * @return true when both discs homed, false when at least one did not.
  */
-void calibrate_zero_position(void);
+bool calibrate_zero_position(void);
 
 /**
  * @brief Turn both discs to their absolute angles and block until they arrive.
@@ -68,13 +80,6 @@ void calibrate_zero_position(void);
  * @param disk_angle Absolute target angles for both discs (0.1 deg).
  */
 void move_to_angle(disk_angles_t disk_angle);
-
-/**
- * @brief Spin both motors one full revolution (diagnostic).
- *
- * Blocks until the revolution completes.
- */
-void test_rotate_motor(void);
 
 /** @} */ // end of motion_planner
 
