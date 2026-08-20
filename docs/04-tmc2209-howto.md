@@ -30,7 +30,7 @@ buffer, and enable pin.
 
 ## 4.2 Setup call sequence used by this project
 
-This is exactly `motor_driver_init()` in `App/Src/app_main.c`, in order,
+This is exactly `motor_driver_init()` in `App/Src/motion_planner.c`, in order,
 with what each call is *for*:
 
 ```c
@@ -38,6 +38,11 @@ tmc2209_hal_t hal;
 tmc2209_stm32_hal_init(tmc_port, &hal, usart, enable_port, enable_pin);
 // ^ Binds `hal`'s function pointers to this project's STM32 CMSIS
 //   implementation (see §4.3). Nothing is sent to the chip yet.
+
+HAL_Delay(APP_DRIVER_POWER_UP_MS);   // 200 ms
+// ^ Settling time the driver needs after its UART is bound, before the
+//   first register write. Skipping it makes the first tmc2209_setup()
+//   land on a chip that is not ready to answer.
 
 tmc2209_setup(tmc, &hal, TMC2209_SERIAL_ADDRESS_0);
 // ^ Stores the hal in `tmc`, puts the chip into UART operating mode,
@@ -52,10 +57,13 @@ tmc2209_enable_automatic_gradient_adaptation(tmc);
 //   the motor will turn but with very little torque if you skip this.
 
 tmc2209_set_microsteps_per_step(tmc, 8);
-tmc2209_set_run_current(tmc, 80);   // percent, 0-100
-tmc2209_set_hold_current(tmc, 40);  // percent, 0-100
-// ^ The actual demo configuration: 8 microsteps per full step,
-//   80% current while moving, 40% while holding position.
+tmc2209_set_run_current(tmc, 25);   // percent, 0-100
+tmc2209_set_hold_current(tmc, 25);  // percent, 0-100
+// ^ The actual configuration: 8 microsteps per full step, 25% current
+//   both while moving and while holding. 8 x 200 full steps is the
+//   1600 microsteps/revolution every angle calculation is built on
+//   (APP_MICROSTEPS_PER_REV), so changing the microstepping here changes
+//   the planner's step math with it.
 
 tmc2209_enable(tmc);
 // ^ Clears the chip's software-disable flag AND, since the hal provides
@@ -66,7 +74,7 @@ bool ok = tmc2209_is_setup_and_communicating(tmc);
 //   configured. Needs RX wired; see the warning in §4.5.
 ```
 
-Then, once per motor, still in `App_init()`:
+Then, once per motor, still in `initialize_motors()`:
 
 ```c
 tmc2209_move_using_step_dir_interface(tmc);
@@ -90,7 +98,7 @@ operation — motion happens entirely through GPIO pulses via
 | `serial_write` | Loop, writing bytes into the USART's data register, waiting for the TXE ("transmit empty") flag between each — while also draining incoming bytes, because the TMC2209's single-wire UART echoes every transmitted byte back on RX. |
 | `serial_available` / `serial_read` | Drain whatever the receiver has into a small software ring buffer (`TMC2209_STM32_RX_BUFFER_SIZE = 16` bytes) and report/pop from that. There's no RX interrupt — this project polls the UART status register instead. |
 | `serial_flush` | Busy-wait for the TC ("transmission complete") flag, still draining RX meanwhile. |
-| `delay_microseconds` / `delay_milliseconds` | Busy-wait using the Cortex-M3 DWT cycle counter (`DWT->CYCCNT`), calibrated against `SystemCoreClock` (32 MHz here). |
+| `delay_microseconds` / `delay_milliseconds` | Busy-wait using the Cortex-M3 DWT cycle counter (`DWT->CYCCNT`), calibrated against `SystemCoreClock` (48 MHz here). |
 | `set_hardware_enable_pin` | Direct `BSRR` write to the `ENN` GPIO, inverted (ENN is active-low). `NULL` if no enable pin was given. |
 
 Two things worth noticing: this **never calls `HAL_UART_*`** — even though
@@ -122,14 +130,17 @@ by purpose so you know where to look when you need one:
 | Communication tuning | `set_reply_delay` | N/A |
 | Diagnostics/telemetry | `get_version`, `is_communicating`, `is_communicating_but_not_setup`, `hardware_disabled`, `get_settings`, `get_status` (temperature/short-circuit flags), `get_global_status`, `clear_reset`, `clear_drive_error`, `get_interface_transmission_counter`, `get_interstep_duration`, `get_stall_guard_result`, `get_pwm_scale_sum/auto`, `get_pwm_offset/gradient_auto`, `get_microstep_counter`, `get_microsteps_per_step` | **Yes**, all of them |
 
-If you later want stall detection (useful for homing without a limit
-switch), that's `set_stall_guard_threshold` + `enable_cool_step` +
-periodically reading `get_stall_guard_result` — but that's a feature to
-add, not something already lurking unused in this codebase.
+If you later want stall detection, that's `set_stall_guard_threshold` +
+`enable_cool_step` + periodically reading `get_stall_guard_result` — but
+that's a feature to add, not something already lurking unused in this
+codebase. Note that homing does *not* need it here: each disc has its own
+optical ZERO sensor read as a plain GPIO, so the reference comes from a real
+flag rather than from inferred motor load (see
+[08-motion-and-homing.md](08-motion-and-homing.md)).
 
 ## 4.5 The failure mode you'll actually see on a breadboard
 
-`motor_comm_warning()` in `app_main.c` blinks the LED (short blinks = motor
+`blink_warning()` in `motion_planner.c` blinks the LED (short blinks = motor
 index, repeated 3 times) when `tmc2209_is_setup_and_communicating()` comes
 back `false`, but keeps running rather than halting — because every
 `tmc2209_set_*`/`tmc2209_enable_*` call above is a one-way UART write, the
@@ -138,4 +149,12 @@ never make it back. The comment in the code names the likely cause: the
 `PDN_UART` pin is a single wire that both drives and is driven, so it needs
 TX connected through a ~1 kΩ resistor and RX tied directly to the same
 node — if RX is wired straight to TX instead of to `PDN_UART`, you'll see
-exactly this symptom (motor moves, LED blinks a warning forever).
+exactly this symptom: the motor moves, and the LED flashes that motor's code
+three times during startup.
+
+One caveat when reading blink codes: the same `blink_warning()` and the same
+per-motor code are also used when that disc fails to home
+([08-motion-and-homing.md](08-motion-and-homing.md) §8.8). A board with a
+UART problem *and* a healthy sensor blinks once during driver bring-up; a
+board with a sensor problem blinks later, after the drivers are up. If you see
+the code twice for the same motor, both faults are present.
