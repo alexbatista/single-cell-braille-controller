@@ -96,6 +96,7 @@ int main(void)
   MX_TIM3_Init();
   MX_USB_DEVICE_Init();
   MX_SPI2_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   App_init(&huart2, &huart3, &htim2, &htim3);
   /* USER CODE END 2 */
