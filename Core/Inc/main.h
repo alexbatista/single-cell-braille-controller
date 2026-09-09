@@ -93,6 +93,14 @@ void Error_Handler(void);
 #define ZERO_MOTOR01_GPIO_Port GPIOA
 #define ETH_RESET_Pin GPIO_PIN_10
 #define ETH_RESET_GPIO_Port GPIOA
+#define ETH_INT_Pin GPIO_PIN_5
+#define ETH_INT_GPIO_Port GPIOB
+#define ETH_INT_EXTI_IRQn EXTI9_5_IRQn
+#define BUZZER_Pin GPIO_PIN_6
+#define BUZZER_GPIO_Port GPIOB
+#define BTN_REPEAT_Pin GPIO_PIN_7
+#define BTN_REPEAT_GPIO_Port GPIOB
+#define BTN_REPEAT_EXTI_IRQn EXTI9_5_IRQn
 #define BTN_NEXT_Pin GPIO_PIN_8
 #define BTN_NEXT_GPIO_Port GPIOB
 #define BTN_NEXT_EXTI_IRQn EXTI9_5_IRQn

@@ -110,17 +110,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(ETH_RESET_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BTN_NEXT_Pin */
-  GPIO_InitStruct.Pin = BTN_NEXT_Pin;
+  /*Configure GPIO pins : ETH_INT_Pin BTN_REPEAT_Pin BTN_NEXT_Pin BTN_PREV_Pin */
+  GPIO_InitStruct.Pin = ETH_INT_Pin|BTN_REPEAT_Pin|BTN_NEXT_Pin|BTN_PREV_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(BTN_NEXT_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : BTN_PREV_Pin */
-  GPIO_InitStruct.Pin = BTN_PREV_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BTN_PREV_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
