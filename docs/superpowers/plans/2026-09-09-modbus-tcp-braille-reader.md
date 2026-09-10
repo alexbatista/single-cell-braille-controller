@@ -54,7 +54,7 @@
 | `App/Inc/buzzer.h`, `App/Src/buzzer.c` | Bounded tone-pattern player on TIM4_CH1 |
 | `App/Inc/buttons.h`, `App/Src/buttons.c` | EXTI → debounced NEXT/PREV/REPEAT events |
 | `App/Inc/plc_link.h`, `App/Src/plc_link.c` | W5500 bring-up, TCP connect, poll/timeout/reconnect state machine |
-| `App/Src/usb_device_stub.c` | No-op `MX_USB_DEVICE_Init()` + `hpcd_USB_FS` for the MODBUS variant (Task 11) |
+| `App/Src/usb_device_stub.c` | No-op `MX_USB_DEVICE_Init()` + `hpcd_USB_FS` for the MODBUS variant (Task 12) |
 
 **Created — vendored library**
 | Path | Responsibility |
@@ -68,18 +68,19 @@
 |---|---|
 | `App/Inc/braille_disc.h`, `App/Src/braille_disc.c` | Expose the dot-bitmask primitive (Task 1) |
 | `App/Src/motion_planner.c` | `blink_warning()` moves out to `fault_led.c` (Task 2) |
-| `App/Src/app_main.c`, `App/Inc/app_main.h` | Cooperative tick, variant gating (Task 12) |
-| `CMakeLists.txt` | `Lib/w5500` subdirectory (Task 9); variant option and USB source exclusion (Task 11) |
+| `App/Src/app_main.c`, `App/Inc/app_main.h` | Cooperative tick, variant gating (Task 11) |
+| `CMakeLists.txt` | `Lib/w5500` subdirectory (Task 9); variant option and USB source exclusion (Task 12) |
 | `docs/*.md` | Two new guides + four updates (Task 13) |
-| `Core/Src/main.c` | `App_init()` call gains two handles, inside `USER CODE BEGIN 2` (Task 12) |
+| `Core/Src/main.c` | `App_init()` call gains two handles, inside `USER CODE BEGIN 2` (Task 11) |
 
 **Task order rationale:** Tasks 1–6 are pure logic and complete host-testable
 units, so every behaviour in spec §5–§7 is pinned down and verified before any
 hardware is involved. Tasks 7–10 are the hardware ports, each ending in a bench
 check that proves it on its own — the buzzer by ear, the buttons by press, the
-SPI bus against `VERSIONR`. Task 11 changes the build shape, Task 12 is the
-first moment the whole system runs, and Task 13 brings the guides back in line
-with the firmware.
+SPI bus against `VERSIONR`. Task 11 is the first moment the whole system
+runs; Task 12 then changes the build shape — that order and not the reverse,
+because USB cannot leave the link until `app_main.c` has stopped calling into
+it — and Task 13 brings the guides back in line with the firmware.
 
 ---
 
@@ -186,8 +187,10 @@ Create `tests/Makefile`. It compiles each suite against `App/Inc` plus the stub 
 # directly to reach its static functions.
 
 CC      ?= gcc
+# App/Src is on the include path because every suite #includes its module's
+# .c directly, which is how the tests reach static functions.
 CFLAGS  := -std=c11 -Wall -Wextra -Werror -g -O0 \
-           -I../App/Inc -Istubs -I.
+           -I../App/Inc -I../App/Src -Istubs -I.
 SUITES  := test_braille_dots
 
 BINDIR  := build
@@ -210,7 +213,7 @@ clean:
 	@rm -rf $(BINDIR)
 ```
 
-Add `tests/build` to `.gitignore` (append a line; the file already ignores `build`, but that pattern is anchored differently enough to be worth the explicit entry).
+No `.gitignore` change is needed: its existing `build` entry is unanchored, so it already matches `tests/build` at any depth. Confirm with `git check-ignore -v tests/build` rather than taking this on trust.
 
 - [ ] **Step 4: Write the failing test**
 
@@ -3298,10 +3301,16 @@ void plc_link_request_now(void);
 /**
  * @brief Note that the W5500 asserted its interrupt line.
  *
- * Safe to call from interrupt context; it only sets a flag. This is purely an
- * optimisation -- it lets the next tick service the socket without waiting
- * for the poll instant -- and the link works correctly if the pin never
- * fires.
+ * Safe to call from interrupt context; it only sets a flag.
+ *
+ * @note ETH_INT (PB5) is wired and owned here, but nothing yet acts on it,
+ *       and that is deliberate rather than unfinished. @ref plc_link_tick
+ *       runs on every pass of the main loop, so the socket is already
+ *       serviced as promptly as an interrupt could ask for -- there is no
+ *       wait to short-circuit. The W5500's @c SIMR / @c Sn_IMR are left
+ *       masked accordingly, so the line never asserts. This function exists
+ *       so PB5 has a declared owner in the shared EXTI handler, and so an
+ *       interrupt-driven or low-power revision has a place to start.
  *
  * @param gpio_pin The pin whose EXTI fired; anything else is ignored.
  */
@@ -3406,10 +3415,12 @@ static void fail_to_backoff(void) {
 // not answer at all, which is a wiring or power problem rather than a network
 // one.
 static bool chip_bring_up(void) {
-  static const uint8_t tx_sizes[8] = {PLC_SOCKET_BUFFER_KB, 0u, 0u, 0u,
-                                      0u,                   0u, 0u, 0u};
-  static const uint8_t rx_sizes[8] = {PLC_SOCKET_BUFFER_KB, 0u, 0u, 0u,
-                                      0u,                   0u, 0u, 0u};
+  // Not const: ioLibrary takes uint8_t*, and casting the const away at the
+  // call site would be a wart that reads like a bug.
+  static uint8_t tx_sizes[8] = {PLC_SOCKET_BUFFER_KB, 0u, 0u, 0u,
+                                0u,                   0u, 0u, 0u};
+  static uint8_t rx_sizes[8] = {PLC_SOCKET_BUFFER_KB, 0u, 0u, 0u,
+                                0u,                   0u, 0u, 0u};
 
   w5500_stm32_hard_reset();
   w5500_stm32_init(link.spi);
@@ -3417,7 +3428,7 @@ static bool chip_bring_up(void) {
   if (getVERSIONR() != PLC_W5500_VERSION) {
     return false;
   }
-  if (wizchip_init((uint8_t *)tx_sizes, (uint8_t *)rx_sizes) != 0) {
+  if (wizchip_init(tx_sizes, rx_sizes) < 0) {
     return false;
   }
 
@@ -3544,10 +3555,10 @@ void plc_link_tick(void) {
         fail_to_backoff();
         return;
       }
-      static const uint8_t server_ip[4] = {PLC_SERVER_IP_0, PLC_SERVER_IP_1,
-                                           PLC_SERVER_IP_2, PLC_SERVER_IP_3};
+      static uint8_t server_ip[4] = {PLC_SERVER_IP_0, PLC_SERVER_IP_1,
+                                     PLC_SERVER_IP_2, PLC_SERVER_IP_3};
       // Non-blocking, so SOCK_BUSY here means "in progress", not "failed".
-      (void)connect(PLC_SOCKET_NUMBER, (uint8_t *)server_ip, PLC_SERVER_PORT);
+      (void)connect(PLC_SOCKET_NUMBER, server_ip, PLC_SERVER_PORT);
       enter(PLC_LINK_CONNECTING);
     }
     return;
@@ -3580,7 +3591,9 @@ void plc_link_tick(void) {
     return;
 
   case PLC_LINK_AWAITING_RESPONSE:
-    link.irq_pending = false; // the flag only exists to skip the wait below
+    // Nothing consumes irq_pending: this tick runs on every main-loop pass,
+    // so read_response() below is already as prompt as an interrupt could
+    // make it. See the note on plc_link_on_exti() in the header.
     if (getSn_SR(PLC_SOCKET_NUMBER) != SOCK_ESTABLISHED) {
       fail_to_backoff();
       return;
@@ -3661,167 +3674,19 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Phase 3 — Build variants, integration, documentation
+## Phase 3 — Integration, build variants, documentation
 
-### Task 11: The two input variants
-
-Spec decision §3.6. `BRAILLE_INPUT_MODBUS` is the default; `BRAILLE_INPUT_USB_CDC` rebuilds today's behaviour.
-
-**The constraint that shapes this task.** `MX_USB_DEVICE_Init()` is called from generated `main()` and `Core/Src/stm32f1xx_it.c:213` calls `HAL_PCD_IRQHandler(&hpcd_USB_FS)`. Both sit outside any `USER CODE` region, so neither can be guarded — CubeMX would overwrite the guard. The vector table keeps that ISR alive through `--gc-sections`, so excluding the USB sources leaves two unresolved symbols. The fix is to supply no-op definitions, which means the reachable part of `stm32f1xx_hal_pcd.c` and `stm32f1xx_ll_usb.c` stays linked. That is a known, accepted cost — Release has 43 KB free, and this task is about build hygiene, not about making the feature fit.
-
-**Files:**
-- Create: `App/Src/usb_device_stub.c`
-- Modify: `CMakeLists.txt`
-
-**Interfaces:**
-- Consumes: nothing.
-- Produces: the `BRAILLE_INPUT_MODBUS` / `BRAILLE_INPUT_USB_CDC` compile definitions, and a `BRAILLE_INPUT` CMake cache variable.
-
-- [ ] **Step 1: Create the stub**
-
-The file is always compiled — `App/Src/*.c` is globbed — so its contents are guarded rather than its compilation.
-
-```c
-// ----------------------------------------------------------------------------
-// usb_device_stub.c
-//
-// The MODBUS variant excludes USB_DEVICE/ from the build, but two references
-// to it survive in generated code that cannot be guarded:
-//
-//   * Core/Src/main.c calls MX_USB_DEVICE_Init() from the init sequence.
-//   * Core/Src/stm32f1xx_it.c's USB_LP_CAN1_RX0_IRQHandler calls
-//     HAL_PCD_IRQHandler(&hpcd_USB_FS), and the vector table keeps that
-//     handler alive through --gc-sections.
-//
-// Both sit outside any USER CODE region, so guarding them there would be
-// undone by the next CubeMX code generation. No-op definitions here satisfy
-// the link instead, and leave the generated files untouched.
-//
-// The handler can never actually run: nothing enables the USB interrupt in
-// this variant, because MX_USB_DEVICE_Init() is the no-op below.
-// ----------------------------------------------------------------------------
-
-#if defined(BRAILLE_INPUT_MODBUS)
-
-#include "stm32f1xx_hal.h"
-
-/** @brief Stands in for USB_DEVICE/App/usb_device.c's initialiser. */
-void MX_USB_DEVICE_Init(void) {}
-
-/** @brief Stands in for USB_DEVICE/Target/usbd_conf.c's PCD handle. */
-PCD_HandleTypeDef hpcd_USB_FS;
-
-#endif // BRAILLE_INPUT_MODBUS
-```
-
-- [ ] **Step 2: Add the variant switch to the top-level CMakeLists.txt**
-
-Append to the **end** of `CMakeLists.txt`, after `target_link_libraries()`. It must come after `add_subdirectory(cmake/stm32cubemx)` so the generated sources are already attached to the target.
-
-```cmake
-# ---------------------------------------------------------------------------
-# Input source variant
-#
-# The MODBUS reader is the product. The USB typed-character path is kept for
-# bench work and for regression-testing the braille rendering without a PLC,
-# and is selected with -DBRAILLE_INPUT=USB_CDC at configure time.
-#
-# The surgery below lives here rather than in cmake/stm32cubemx/CMakeLists.txt
-# because that file is regenerated by CubeMX; this one is generated once and
-# is ours to edit.
-# ---------------------------------------------------------------------------
-set(BRAILLE_INPUT "MODBUS" CACHE STRING "Braille input source")
-set_property(CACHE BRAILLE_INPUT PROPERTY STRINGS MODBUS USB_CDC)
-message("Braille input source: " ${BRAILLE_INPUT})
-
-if(BRAILLE_INPUT STREQUAL "USB_CDC")
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BRAILLE_INPUT_USB_CDC)
-else()
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BRAILLE_INPUT_MODBUS)
-
-    # Drop the USB application sources and the class-stack middleware. The
-    # remaining references from generated code are satisfied by
-    # App/Src/usb_device_stub.c.
-    get_target_property(_braille_sources ${CMAKE_PROJECT_NAME} SOURCES)
-    list(FILTER _braille_sources EXCLUDE REGEX "/USB_DEVICE/")
-    set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY SOURCES ${_braille_sources})
-
-    get_target_property(_braille_libs ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)
-    list(REMOVE_ITEM _braille_libs USB_Device_Library)
-    set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY LINK_LIBRARIES ${_braille_libs})
-
-    # The object library is still defined by the generated CMakeLists; keep
-    # ninja from compiling objects nothing links.
-    set_property(TARGET USB_Device_Library PROPERTY EXCLUDE_FROM_ALL TRUE)
-endif()
-```
-
-- [ ] **Step 3: Verify the MODBUS variant links and measure the saving**
-
-```bash
-export PATH="$HOME/.local/share/stm32cube/bundles/cmake/4.3.1+st.1/bin:$HOME/.local/share/stm32cube/bundles/gnu-tools-for-stm32/13.3.1+st.9/bin:$HOME/.local/share/stm32cube/bundles/ninja/1.13.2+st.1/bin:$PATH"
-rm -rf build/Debug build/Release
-cmake --preset Debug -DBRAILLE_INPUT=MODBUS && cmake --build --preset Debug
-cmake --preset Release -DBRAILLE_INPUT=MODBUS && cmake --build --preset Release
-echo "--- MODBUS variant ---"
-arm-none-eabi-size build/Debug/single-cell-braille-controller.elf
-arm-none-eabi-size build/Release/single-cell-braille-controller.elf
-grep -c "usbd_cdc\|usbd_core\|usbd_ctlreq" build/Release/single-cell-braille-controller.map || echo "USB class stack absent from the map"
-```
-Expected: both link, and the class-stack objects are gone from the map. Compare against the numbers recorded in Task 10 to get the realised saving.
-
-- [ ] **Step 4: Verify the USB variant still builds today's firmware**
-
-```bash
-rm -rf build/Debug
-cmake --preset Debug -DBRAILLE_INPUT=USB_CDC && cmake --build --preset Debug
-arm-none-eabi-size build/Debug/single-cell-braille-controller.elf
-```
-Expected: links. `App/Src/app_main.c` still has its CDC body at this point, so this variant is the pre-existing firmware plus the unreferenced new modules. Then reconfigure back to MODBUS so later work uses the default:
-```bash
-rm -rf build/Debug && cmake --preset Debug && cmake --build --preset Debug
-```
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add CMakeLists.txt App/Src/usb_device_stub.c
-git commit -m "build: select the input source at configure time
-
-BRAILLE_INPUT=MODBUS (the default) or USB_CDC. The MODBUS variant drops the
-USB application sources and the class-stack middleware from the link; the USB
-variant rebuilds the typed-character firmware unchanged, which is worth
-keeping for bench work on the braille rendering with no PLC in the room.
-
-The switch lives in the top-level CMakeLists.txt, not in
-cmake/stm32cubemx/CMakeLists.txt, because the latter is regenerated by CubeMX
-and any edit there is temporary by construction.
-
-Two references to USB survive in generated code and cannot be guarded:
-main() calls MX_USB_DEVICE_Init(), and stm32f1xx_it.c's USB handler calls
-HAL_PCD_IRQHandler(&hpcd_USB_FS) -- kept alive by the vector table even with
---gc-sections. Both are outside any USER CODE region, so a guard would be
-overwritten on the next generation. usb_device_stub.c supplies no-op
-definitions instead, which means the reachable part of the PCD/LL layer stays
-linked. That cost is accepted: Release has 43 KB free and this change is about
-not shipping a dead USB stack, not about making the feature fit.
-
-Release text: <record both variants' arm-none-eabi-size output here>.
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 12: Wire it together
+### Task 11: Wire it together
 
 Spec §4. The first task where the whole system runs. `App_run()` becomes the cooperative tick.
 
 **Files:**
 - Modify: `App/Inc/app_main.h`, `App/Src/app_main.c`, `Core/Src/main.c` (inside `USER CODE BEGIN 2` only)
 
+**The `#if` gating is written here, before the switch that sets it** (Task 12). With neither macro defined the `#else` branch compiles, which is the MODBUS path — so this task links with USB still present, and Task 12 can then drop USB because nothing references it any more.
+
 **Interfaces:**
-- Consumes: everything from Tasks 1–11.
+- Consumes: everything from Tasks 1–10.
 - Produces: `void App_init(UART_HandleTypeDef *huart_m1, UART_HandleTypeDef *huart_m2, TIM_HandleTypeDef *htim_m1, TIM_HandleTypeDef *htim_m2, TIM_HandleTypeDef *htim_buzzer, SPI_HandleTypeDef *hspi_eth)` and the existing `void App_run(void)`.
 
 - [ ] **Step 1: Update `app_main.h`**
@@ -3999,21 +3864,21 @@ Inside `/* USER CODE BEGIN 2 */` only — this is a legitimate edit, it is a use
 
 `main.c` already includes `tim.h` and `spi.h` via the generated includes, so `htim4` and `hspi2` are in scope. Confirm with a build rather than by reading.
 
-- [ ] **Step 4: Build both variants**
+- [ ] **Step 4: Build**
+
+The `BRAILLE_INPUT` switch does not exist yet — Task 12 adds it. With neither macro
+defined, `app_main.c`'s `#else` branch selects MODBUS while the USB sources are still in
+the link, so this builds cleanly. That ordering is the point: the variant task cannot
+drop USB from the link until this file has stopped calling `CDC_ReadChar`.
 
 ```bash
 export PATH="$HOME/.local/share/stm32cube/bundles/cmake/4.3.1+st.1/bin:$HOME/.local/share/stm32cube/bundles/gnu-tools-for-stm32/13.3.1+st.9/bin:$HOME/.local/share/stm32cube/bundles/ninja/1.13.2+st.1/bin:$PATH"
-rm -rf build/Debug build/Release
-cmake --preset Debug && cmake --build --preset Debug
-cmake --preset Release && cmake --build --preset Release
+cmake --build --preset Debug && cmake --build --preset Release
 arm-none-eabi-size build/Debug/single-cell-braille-controller.elf
 arm-none-eabi-size build/Release/single-cell-braille-controller.elf
 make -C tests
-rm -rf build/Debug
-cmake --preset Debug -DBRAILLE_INPUT=USB_CDC && cmake --build --preset Debug
-rm -rf build/Debug && cmake --preset Debug && cmake --build --preset Debug
 ```
-Expected: all four builds link, host suites pass.
+Expected: both presets link, host suites pass.
 
 - [ ] **Step 5: End-to-end verification on hardware**
 
@@ -4068,6 +3933,158 @@ automatic jump to newer data, recovery from an unplugged cable and from a
 missing W5500, and press coalescing during a move.
 
 Release text: <record arm-none-eabi-size output here>.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 12: The two input variants
+
+Spec decision §3.6. `BRAILLE_INPUT_MODBUS` is the default; `BRAILLE_INPUT_USB_CDC` rebuilds today's behaviour.
+
+**The constraint that shapes this task.** `MX_USB_DEVICE_Init()` is called from generated `main()` and `Core/Src/stm32f1xx_it.c:213` calls `HAL_PCD_IRQHandler(&hpcd_USB_FS)`. Both sit outside any `USER CODE` region, so neither can be guarded — CubeMX would overwrite the guard. The vector table keeps that ISR alive through `--gc-sections`, so excluding the USB sources leaves two unresolved symbols. The fix is to supply no-op definitions, which means the reachable part of `stm32f1xx_hal_pcd.c` and `stm32f1xx_ll_usb.c` stays linked. That is a known, accepted cost — Release has 43 KB free, and this task is about build hygiene, not about making the feature fit.
+
+**Files:**
+- Create: `App/Src/usb_device_stub.c`
+- Modify: `CMakeLists.txt`
+
+**Runs after integration (Task 11)**, which is what makes the exclusion linkable: `app_main.c` no longer references `CDC_ReadChar` or `CDC_Transmit_FS`, so only the two generated references remain and `usb_device_stub.c` answers them.
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces: the `BRAILLE_INPUT_MODBUS` / `BRAILLE_INPUT_USB_CDC` compile definitions, and a `BRAILLE_INPUT` CMake cache variable.
+
+- [ ] **Step 1: Create the stub**
+
+The file is always compiled — `App/Src/*.c` is globbed — so its contents are guarded rather than its compilation.
+
+```c
+// ----------------------------------------------------------------------------
+// usb_device_stub.c
+//
+// The MODBUS variant excludes USB_DEVICE/ from the build, but two references
+// to it survive in generated code that cannot be guarded:
+//
+//   * Core/Src/main.c calls MX_USB_DEVICE_Init() from the init sequence.
+//   * Core/Src/stm32f1xx_it.c's USB_LP_CAN1_RX0_IRQHandler calls
+//     HAL_PCD_IRQHandler(&hpcd_USB_FS), and the vector table keeps that
+//     handler alive through --gc-sections.
+//
+// Both sit outside any USER CODE region, so guarding them there would be
+// undone by the next CubeMX code generation. No-op definitions here satisfy
+// the link instead, and leave the generated files untouched.
+//
+// The handler can never actually run: nothing enables the USB interrupt in
+// this variant, because MX_USB_DEVICE_Init() is the no-op below.
+// ----------------------------------------------------------------------------
+
+#if defined(BRAILLE_INPUT_MODBUS)
+
+#include "stm32f1xx_hal.h"
+
+/** @brief Stands in for USB_DEVICE/App/usb_device.c's initialiser. */
+void MX_USB_DEVICE_Init(void) {}
+
+/** @brief Stands in for USB_DEVICE/Target/usbd_conf.c's PCD handle. */
+PCD_HandleTypeDef hpcd_USB_FS;
+
+#endif // BRAILLE_INPUT_MODBUS
+```
+
+- [ ] **Step 2: Add the variant switch to the top-level CMakeLists.txt**
+
+Append to the **end** of `CMakeLists.txt`, after `target_link_libraries()`. It must come after `add_subdirectory(cmake/stm32cubemx)` so the generated sources are already attached to the target.
+
+```cmake
+# ---------------------------------------------------------------------------
+# Input source variant
+#
+# The MODBUS reader is the product. The USB typed-character path is kept for
+# bench work and for regression-testing the braille rendering without a PLC,
+# and is selected with -DBRAILLE_INPUT=USB_CDC at configure time.
+#
+# The surgery below lives here rather than in cmake/stm32cubemx/CMakeLists.txt
+# because that file is regenerated by CubeMX; this one is generated once and
+# is ours to edit.
+# ---------------------------------------------------------------------------
+set(BRAILLE_INPUT "MODBUS" CACHE STRING "Braille input source")
+set_property(CACHE BRAILLE_INPUT PROPERTY STRINGS MODBUS USB_CDC)
+message("Braille input source: " ${BRAILLE_INPUT})
+
+if(BRAILLE_INPUT STREQUAL "USB_CDC")
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BRAILLE_INPUT_USB_CDC)
+else()
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BRAILLE_INPUT_MODBUS)
+
+    # Drop the USB application sources and the class-stack middleware. The
+    # remaining references from generated code are satisfied by
+    # App/Src/usb_device_stub.c.
+    get_target_property(_braille_sources ${CMAKE_PROJECT_NAME} SOURCES)
+    list(FILTER _braille_sources EXCLUDE REGEX "/USB_DEVICE/")
+    set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY SOURCES ${_braille_sources})
+
+    get_target_property(_braille_libs ${CMAKE_PROJECT_NAME} LINK_LIBRARIES)
+    list(REMOVE_ITEM _braille_libs USB_Device_Library)
+    set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY LINK_LIBRARIES ${_braille_libs})
+
+    # The object library is still defined by the generated CMakeLists; keep
+    # ninja from compiling objects nothing links.
+    set_property(TARGET USB_Device_Library PROPERTY EXCLUDE_FROM_ALL TRUE)
+endif()
+```
+
+- [ ] **Step 3: Verify the MODBUS variant links and measure the saving**
+
+```bash
+export PATH="$HOME/.local/share/stm32cube/bundles/cmake/4.3.1+st.1/bin:$HOME/.local/share/stm32cube/bundles/gnu-tools-for-stm32/13.3.1+st.9/bin:$HOME/.local/share/stm32cube/bundles/ninja/1.13.2+st.1/bin:$PATH"
+rm -rf build/Debug build/Release
+cmake --preset Debug -DBRAILLE_INPUT=MODBUS && cmake --build --preset Debug
+cmake --preset Release -DBRAILLE_INPUT=MODBUS && cmake --build --preset Release
+echo "--- MODBUS variant ---"
+arm-none-eabi-size build/Debug/single-cell-braille-controller.elf
+arm-none-eabi-size build/Release/single-cell-braille-controller.elf
+grep -c "usbd_cdc\|usbd_core\|usbd_ctlreq" build/Release/single-cell-braille-controller.map || echo "USB class stack absent from the map"
+```
+Expected: both link, and the class-stack objects are gone from the map. Compare against the numbers recorded in Task 11 to get the realised saving.
+
+- [ ] **Step 4: Verify the USB variant still builds today's firmware**
+
+```bash
+rm -rf build/Debug
+cmake --preset Debug -DBRAILLE_INPUT=USB_CDC && cmake --build --preset Debug
+arm-none-eabi-size build/Debug/single-cell-braille-controller.elf
+```
+Expected: links, and `App_run()` compiles its CDC body again — the pre-existing firmware, rebuilt through the gating Task 11 put in place. Then reconfigure back to MODBUS so later work uses the default:
+```bash
+rm -rf build/Debug && cmake --preset Debug && cmake --build --preset Debug
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add CMakeLists.txt App/Src/usb_device_stub.c
+git commit -m "build: select the input source at configure time
+
+BRAILLE_INPUT=MODBUS (the default) or USB_CDC. The MODBUS variant drops the
+USB application sources and the class-stack middleware from the link; the USB
+variant rebuilds the typed-character firmware unchanged, which is worth
+keeping for bench work on the braille rendering with no PLC in the room.
+
+The switch lives in the top-level CMakeLists.txt, not in
+cmake/stm32cubemx/CMakeLists.txt, because the latter is regenerated by CubeMX
+and any edit there is temporary by construction.
+
+Two references to USB survive in generated code and cannot be guarded:
+main() calls MX_USB_DEVICE_Init(), and stm32f1xx_it.c's USB handler calls
+HAL_PCD_IRQHandler(&hpcd_USB_FS) -- kept alive by the vector table even with
+--gc-sections. Both are outside any USER CODE region, so a guard would be
+overwritten on the next generation. usb_device_stub.c supplies no-op
+definitions instead, which means the reachable part of the PCD/LL layer stays
+linked. That cost is accepted: Release has 43 KB free and this change is about
+not shipping a dead USB stack, not about making the feature fit.
+
+Release text: <record both variants' arm-none-eabi-size output here>.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -4162,7 +4179,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 Run against the spec after writing, before execution.
 
-**Spec coverage.** Every section maps to a task: §4.2 braille change → Task 1; §4.2 fault_led → Task 2; §9 config → Task 3; §5 packet → Task 4; §8 codec → Task 5; §6 reader → Task 6; §7 sounds → Task 7; §6 buttons → Task 8; §4.1 `Lib/w5500` → Task 9; §8 link + §10 errors → Task 10; §3.6 variants → Task 11; §4 tick → Task 12; §13 docs → Task 13. §11 flash budget is covered by a measure-and-record step in every firmware task. §12 testing is Tasks 1, 4, 5 and 6. §14 out-of-scope adds nothing.
+**Spec coverage.** Every section maps to a task: §4.2 braille change → Task 1; §4.2 fault_led → Task 2; §9 config → Task 3; §5 packet → Task 4; §8 codec → Task 5; §6 reader → Task 6; §7 sounds → Task 7; §6 buttons → Task 8; §4.1 `Lib/w5500` → Task 9; §8 link + §10 errors → Task 10; §4 tick → Task 11; §3.6 variants → Task 12; §13 docs → Task 13. §11 flash budget is covered by a measure-and-record step in every firmware task. §12 testing is Tasks 1, 4, 5 and 6. §14 out-of-scope adds nothing.
 
 **Three spec corrections are folded into the tasks**, each with a step that edits the spec so the two do not drift:
 1. Task 6 — a link fault returns to `RESTING`, not to "the previous state", which would resume a stale dwell.
@@ -4174,5 +4191,5 @@ Run against the spec after writing, before execution.
 **Known risks, in the order they will bite.**
 1. **ioLibrary's API differs from the version documented** (Task 9) — `reg_wizchip_spiburst_cbfunc` may be absent or take `datasize_t`, and `wizphy_getphylink()` may sit behind a chip guard. Both have named fallbacks in the task; record whatever you find in `UPSTREAM.md`.
 2. **SPI at 12 Mbit/s over jumper leads** (Task 9 Step 7) — the `VERSIONR` check catches it immediately, and the fix is one prescaler step.
-3. **Debug flash** (Task 10 Step 3) — ioLibrary at `-O0` roughly doubles. If Debug nears 64 KB, pull Task 11 forward; Release is never at risk.
-4. **`PLC_LABEL_DWELL_MS`** — 1500 ms is a guess about a person, not a number derivable from the code. Expect to tune it after Task 12 Step 5 with the actual reader.
+3. **Debug flash** (Task 10 Step 3) — ioLibrary at `-O0` roughly doubles. If Debug nears 64 KB, pull Task 12 forward; Release is never at risk.
+4. **`PLC_LABEL_DWELL_MS`** — 1500 ms is a guess about a person, not a number derivable from the code. Expect to tune it after Task 11 Step 5 with the actual reader.
