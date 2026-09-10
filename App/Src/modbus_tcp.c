@@ -72,7 +72,7 @@ modbus_status_t modbus_parse_read_coils(const uint8_t *frame, uint16_t length,
                                         uint8_t *out_exception_code) {
   if (frame == NULL || out_bits == NULL || quantity == 0u ||
       quantity > MODBUS_MAX_COILS) {
-    return MODBUS_ERR_TOO_SHORT;
+    return MODBUS_ERR_INVALID_ARGUMENT;
   }
   // An exception reply is the shortest legal response, so anything below it
   // cannot be parsed at all.

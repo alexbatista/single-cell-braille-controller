@@ -136,5 +136,38 @@ int main(void) {
            MODBUS_ERR_EXCEPTION);
   CHECK_EQ(exc, 0x02u);
 
+  /* ---- parse: invalid arguments ---- */
+  n = make_response(f, TID, UNIT, MODBUS_FC_READ_COILS, 2u, 0u, 0u);
+
+  CHECK_EQ(modbus_parse_read_coils(NULL, n, TID, UNIT, QTY, &bits, &exc),
+           MODBUS_ERR_INVALID_ARGUMENT);
+
+  CHECK_EQ(modbus_parse_read_coils(f, n, TID, UNIT, QTY, NULL, &exc),
+           MODBUS_ERR_INVALID_ARGUMENT);
+
+  CHECK_EQ(modbus_parse_read_coils(f, n, TID, UNIT, 0u, &bits, &exc),
+           MODBUS_ERR_INVALID_ARGUMENT);
+
+  CHECK_EQ(modbus_parse_read_coils(f, n, TID, UNIT, MODBUS_MAX_COILS + 1u,
+                                   &bits, &exc),
+           MODBUS_ERR_INVALID_ARGUMENT);
+
+  /* Truncated frame after byte-count validation: a frame promising 2 data
+   * bytes but delivering only 1, such that it passes length floor (>= 9),
+   * MBAP length check (4 == 10 - 6), function check, and byte-count check
+   * (2 == 2) but fails the final frame-size check (10 < 11). */
+  f[0] = (uint8_t)(TID >> 8);
+  f[1] = (uint8_t)(TID & 0xFFu);
+  f[2] = 0u;
+  f[3] = 0u;
+  f[4] = 0u;
+  f[5] = 0x04u; /* MBAP length = 4: unit + fc + byte_count + 1 data byte */
+  f[6] = UNIT;
+  f[7] = MODBUS_FC_READ_COILS;
+  f[8] = 0x02u; /* byte count claims 2 bytes of data */
+  f[9] = 0x15u; /* but only 1 byte is present (this is data[0]) */
+  CHECK_EQ(modbus_parse_read_coils(f, 10u, TID, UNIT, QTY, &bits, &exc),
+           MODBUS_ERR_TOO_SHORT);
+
   TESTS_REPORT("modbus_tcp");
 }

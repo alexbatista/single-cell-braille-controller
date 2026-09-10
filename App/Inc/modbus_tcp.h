@@ -52,6 +52,7 @@ typedef enum {
   MODBUS_ERR_FUNCTION,        /**< Not a Read Coils reply.                */
   MODBUS_ERR_BYTE_COUNT,      /**< Byte count wrong for the quantity.     */
   MODBUS_ERR_EXCEPTION,       /**< Slave returned an exception.           */
+  MODBUS_ERR_INVALID_ARGUMENT,/**< Caller passed null pointer or out-of-range quantity. */
 } modbus_status_t;
 
 /**
