@@ -12,6 +12,7 @@
 #define __APP_MAIN__
 
 #include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_spi.h"
 #include "stm32f1xx_hal_tim.h"
 
 /**
@@ -21,18 +22,29 @@
  */
 
 /**
- * @brief One-time application setup: bring up both motors.
+ * @brief One-time application setup.
  *
- * @param huart_m1 UART bound to motor 1's TMC2209.
- * @param huart_m2 UART bound to motor 2's TMC2209.
- * @param htim_m1  STEP timer for motor 1.
- * @param htim_m2  STEP timer for motor 2.
+ * Brings up both motors and homes the discs, then -- in the MODBUS variant --
+ * the buzzer, buttons, reader and PLC link. The last two parameters are
+ * unused in the USB_CDC variant.
+ *
+ * @param huart_m1     UART bound to motor 1's TMC2209.
+ * @param huart_m2     UART bound to motor 2's TMC2209.
+ * @param htim_m1      STEP timer for motor 1.
+ * @param htim_m2      STEP timer for motor 2.
+ * @param htim_buzzer  PWM timer driving the buzzer.
+ * @param hspi_eth     SPI peripheral wired to the W5500.
  */
 void App_init(UART_HandleTypeDef *huart_m1, UART_HandleTypeDef *huart_m2,
-              TIM_HandleTypeDef *htim_m1, TIM_HandleTypeDef *htim_m2);
+              TIM_HandleTypeDef *htim_m1, TIM_HandleTypeDef *htim_m2,
+              TIM_HandleTypeDef *htim_buzzer, SPI_HandleTypeDef *hspi_eth);
 
 /**
- * @brief Perform one unit of motion; called repeatedly from the main loop.
+ * @brief One pass of the cooperative main loop; called forever.
+ *
+ * In the MODBUS variant this services buttons, the PLC link and the
+ * presentation sequencer, in that order, and returns. It blocks only while
+ * the discs are turning or a buzzer pattern is playing.
  */
 void App_run(void);
 

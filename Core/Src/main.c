@@ -98,7 +98,7 @@ int main(void)
   MX_SPI2_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-  App_init(&huart2, &huart3, &htim2, &htim3);
+  App_init(&huart2, &huart3, &htim2, &htim3, &htim4, &hspi2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
