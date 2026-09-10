@@ -3,8 +3,9 @@
 //
 // Character-to-disc-angle translation for a single braille cell rendered by
 // two rotating discs. The cell's 6 dots are stored once per character as a
-// bitmask (the single source of truth); each disc's "weight" is derived from
-// that mask and handed to the DISCx_ANGLE_TO_POS_ANG macros in braille_disc.h.
+// bitmask (the single source of truth), reachable through
+// braille_render_dots(); each disc's "weight" is derived from that mask and
+// handed to the DISCx_ANGLE_TO_POS_ANG macros in braille_disc.h.
 //
 // Input arrives one byte at a time as a UTF-8 stream, so bytes are decoded into
 // a character code before any lookup happens.
@@ -92,7 +93,7 @@ static const uint8_t braille_pattern[256] = {
  * @param c Character code in 0..255, i.e. a Unicode codepoint U+0000..U+00FF.
  * @return 6-dot bitmask (DOTx flags); 0 for any unmapped code (blank cell).
  */
-static uint8_t pattern_for_char(uint8_t c) {
+uint8_t braille_pattern_for_char(uint8_t c) {
   if (c >= 'a' && c <= 'z') {
     c -= 0x20; // ASCII lower -> upper
   } else if (c >= 0xE0 && c <= 0xFE && c != 0xF7) {
@@ -204,35 +205,27 @@ static uint32_t utf8_decode_byte(uint8_t byte) {
 #define W2_DOT6 0x08u // MSB
 
 /**
- * @brief Get the character weight for the single-row disc (top row: dots 1,4).
- *
- * The result is passed to the DISC1_ANGLE_TO_POS_ANG macro.
- *
- * @param character Input byte, interpreted as ISO-8859-1.
- * @return uint8_t Weight in 0..3 (dot 1 -> 1, dot 4 -> 2).
+ * @brief Get the weight for the single-row disc (top row: dots 1,4).
+ * @param pattern 6-dot bitmask.
+ * @return Weight in 0..3 (dot 1 -> 1, dot 4 -> 2).
  */
-static uint8_t get_character_weight_single_row_disc(uint8_t character) {
-  uint8_t pattern = pattern_for_char(character);
+static uint8_t get_character_weight_single_row_disc(uint8_t pattern) {
   uint8_t weight = 0u;
   if (pattern & DOT1) {
-    weight |= 1u; // dot 1 -> value 1
+    weight |= 1u; /* dot 1 -> value 1 */
   }
   if (pattern & DOT4) {
-    weight |= 2u; // dot 4 -> value 2
+    weight |= 2u; /* dot 4 -> value 2 */
   }
   return weight;
 }
 
 /**
- * @brief Get the character weight for the double-row disc (dots 2,3,5,6).
- *
- * The result is passed to the DISC2_ANGLE_TO_POS_ANG macro.
- *
- * @param character Input byte, interpreted as ISO-8859-1.
- * @return uint8_t Weight in 0..15 ([d6 d5 d3 d2], d6 most significant).
+ * @brief Get the weight for the double-row disc (dots 2,3,5,6).
+ * @param pattern 6-dot bitmask.
+ * @return Weight in 0..15 ([d6 d5 d3 d2], d6 most significant).
  */
-static uint8_t get_character_weight_double_row_disc(uint8_t character) {
-  uint8_t pattern = pattern_for_char(character);
+static uint8_t get_character_weight_double_row_disc(uint8_t pattern) {
   uint8_t weight = 0u;
   if (pattern & DOT2) {
     weight |= W2_DOT2;
@@ -249,19 +242,23 @@ static uint8_t get_character_weight_double_row_disc(uint8_t character) {
   return weight;
 }
 
-static uint16_t angle_single_row_disc(uint8_t character) {
-  uint8_t weight = get_character_weight_single_row_disc(character);
-  uint16_t angle = DISC1_ANGLE_TO_POS_ANG(weight);
-  return angle;
+void braille_render_dots(uint8_t dots) {
+  disk_angles_t braille_cell = {0, 0};
+
+  uint8_t weight_single = get_character_weight_single_row_disc(dots);
+  uint8_t weight_double = get_character_weight_double_row_disc(dots);
+
+  braille_cell.single_row_disc = DISC1_ANGLE_TO_POS_ANG(weight_single);
+  braille_cell.double_row_disc = DISC2_ANGLE_TO_POS_ANG(weight_double);
+
+  move_to_angle(braille_cell);
 }
-static uint16_t angle_double_row_disc(uint8_t character) {
-  uint8_t weight = get_character_weight_double_row_disc(character);
-  uint16_t angle = DISC2_ANGLE_TO_POS_ANG(weight);
-  return angle;
+
+void braille_render_char(uint8_t latin1_char) {
+  braille_render_dots(braille_pattern_for_char(latin1_char));
 }
 
 void translate_char_on_disc(uint8_t byte) {
-
   uint32_t codepoint = utf8_decode_byte(byte);
   if (codepoint == UTF8_INCOMPLETE) {
     return; // mid-sequence: no character to render yet, discs stay put
@@ -269,15 +266,5 @@ void translate_char_on_disc(uint8_t byte) {
 
   // Outside Latin-1 there is no cell for the character, so render a blank one
   // rather than aliasing it onto some other letter.
-  uint8_t character = (codepoint <= 0xFFu) ? (uint8_t)codepoint : 0u;
-
-  disk_angles_t braille_cell = {0, 0};
-
-  uint16_t angle_single_row = angle_single_row_disc(character);
-  uint16_t angle_double_row = angle_double_row_disc(character);
-
-  braille_cell.single_row_disc = angle_single_row;
-  braille_cell.double_row_disc = angle_double_row;
-
-  move_to_angle(braille_cell);
+  braille_render_char((codepoint <= 0xFFu) ? (uint8_t)codepoint : 0u);
 }
