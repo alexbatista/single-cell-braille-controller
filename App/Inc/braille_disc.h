@@ -65,6 +65,48 @@
 #define DISC2_ANGLE_TO_POS_ANG(WEIGHT) (WEIGHT * DISC_ANGLE_TO_POS_ANG_1)
 
 /**
+ * @name Value glyphs
+ *
+ * The two dot patterns the PLC reader uses for a boolean: no dots raised for
+ * false, all six raised for true. They are deliberately not letters, so a
+ * reader feeling a cell can always tell a value from a label glyph.
+ * @{
+ */
+#define BRAILLE_DOTS_ALL_FLAT 0x00u   /**< No dot raised: blank cell. */
+#define BRAILLE_DOTS_ALL_RAISED 0x3Fu /**< Dots 1-6 raised.           */
+/** @} */
+
+/**
+ * @brief Render an explicit 6-dot pattern on the cell and block until the
+ *        discs arrive.
+ *
+ * The dot bits follow the canonical Unicode Braille Patterns numbering:
+ * bit 0 is dot 1, bit 1 dot 2, ... bit 5 dot 6. Bits above 5 are ignored.
+ *
+ * @param dots 6-dot bitmask, e.g. @ref BRAILLE_DOTS_ALL_RAISED.
+ */
+void braille_render_dots(uint8_t dots);
+
+/**
+ * @brief Render one Latin-1 character on the cell (case-insensitive).
+ *
+ * Use this for characters the firmware itself chooses, such as the packet's
+ * label letters. Input arriving as a UTF-8 byte stream from a host must go
+ * through @ref translate_char_on_disc instead.
+ *
+ * @param latin1_char Character code 0..255; unmapped codes render blank.
+ */
+void braille_render_char(uint8_t latin1_char);
+
+/**
+ * @brief Look up the 6-dot pattern for a Latin-1 character without moving.
+ *
+ * @param c Character code 0..255 (case-insensitive).
+ * @return 6-dot bitmask; 0 for any unmapped code.
+ */
+uint8_t braille_pattern_for_char(uint8_t c);
+
+/**
  * @brief Feed one byte of the incoming UTF-8 stream and render it when a whole
  *        character has arrived.
  *
