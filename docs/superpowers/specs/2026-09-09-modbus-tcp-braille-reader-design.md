@@ -18,7 +18,7 @@ The USB CDC path is not deleted. It becomes a non-default build variant.
 
 | Constraint | Consequence |
 |---|---|
-| Flash is 64 KB and the current Debug build already uses 46 532 B (71 %) | The USB device stack must be compiled out of the MODBUS build to make room for ioLibrary. This is load-bearing, not tidiness. |
+| Flash is 64 KB. Release (`-Os`) uses 22 068 B (34 %); Debug (`-O0 -g3`) uses 46 532 B (71 %) | Shipping has ample room. Compiling the USB stack out of the MODBUS build is what keeps the **Debug** build comfortably linkable, since USB is over half of it. |
 | `move_to_angle()` blocks until both discs arrive (~0.5–1 s) | Everything else must be a cooperative tick; a package read takes tens of seconds, so background polling cannot depend on the read finishing. |
 | The braille cell shows one glyph at a time | A key/value pair is a *sequence* of glyphs, which needs a sequencer with dwell timing. |
 | MODBUS TCP is master/slave and the PLC is the server | The device is a client. A server cannot push to a client, so "unrequested data" is implemented as background polling that detects change. |
@@ -63,9 +63,20 @@ so a future reader does not re-litigate them.
 6. **Two mutually exclusive input variants selected at compile time.**
    `BRAILLE_INPUT_MODBUS` (default) and `BRAILLE_INPUT_USB_CDC`. The USB variant
    compiles today's behaviour unchanged. The MODBUS variant drops
-   `MX_USB_DEVICE_Init`, `usbd_cdc_if` and the `Middlewares/` USB stack from the
-   link, freeing roughly 10 KB. Nothing is deleted; one line in `CMakeLists.txt`
-   switches builds.
+   `usb_device.c`, `usbd_desc.c`, `usbd_cdc_if.c`, `usbd_conf.c` and the
+   `Middlewares/` USB class stack from the link. Nothing is deleted; one CMake
+   option switches builds.
+
+   This is primarily about keeping the `-O0` Debug build small and about not
+   shipping a dead USB stack — **not** about making the feature fit. Release has
+   43 KB free (section 11). The saving is bounded by one detail: the generated
+   `USB_LP_CAN1_RX0_IRQHandler` in `Core/Src/stm32f1xx_it.c` calls
+   `HAL_PCD_IRQHandler(&hpcd_USB_FS)`, and the vector table keeps that handler
+   alive through `--gc-sections`. So the MODBUS variant must supply no-op
+   definitions of `MX_USB_DEVICE_Init()` and `hpcd_USB_FS`, and the reachable
+   part of `stm32f1xx_hal_pcd.c`/`stm32f1xx_ll_usb.c` stays linked. Editing the
+   generated call site is not an option — it lies outside any USER CODE region
+   and CubeMX would overwrite it.
 
 7. **`buzzer_play()` blocks, bounded at ≤ 400 ms.** This is a deliberate
    exception to the otherwise-cooperative design. PWM keeps sounding in hardware
@@ -294,20 +305,35 @@ is unhappy.
 
 ## 11. Flash budget
 
-Debug build before this work: 46 152 B text + 380 B data = 46 532 B of 65 536
-(71 %), leaving 18 624 B. RAM: 7 152 B of 20 480 (35 %).
+Measured on the pre-implementation tree, both presets, with
+`-ffunction-sections -fdata-sections -Wl,--gc-sections` already enabled:
 
-Compiling out the USB stack is expected to return roughly 10 KB of flash and
-about 2 KB of RAM (the CDC `APP_RX_DATA_SIZE`/`APP_TX_DATA_SIZE` buffers are
-1 KB each), giving roughly 28 KB for ioLibrary (~6–8 KB) plus MODBUS and the
-new modules (~5–7 KB). It should fit with margin.
+| Preset | Flags | Flash | of 64 KB | Free |
+|---|---|---|---|---|
+| Release | `-Os -g0` | 22 068 B | 33.7 % | 43 468 B |
+| Debug | `-O0 -g3` | 46 532 B | 71.0 % | 18 624 B |
 
-`arm-none-eabi-size` is checked after each implementation step rather than once
-at the end, so a regression is attributable. If it tightens, in order:
+RAM is 7 312 B of 20 480 (35.7 %) in Release.
 
-1. Vendor only ioLibrary's `Ethernet/` tree — no `Internet/`, so no DHCP, DNS,
+**There is no flash crisis.** The earlier 71 % reading was the Debug build, and
+`-O0` roughly doubles this code. ioLibrary's `Ethernet/` tree plus MODBUS and the
+new modules will fit either preset with room to spare; the USB gating is about
+build hygiene and Debug headroom, not feasibility.
+
+USB's compiled cost, summed over `usb_device.c`, `usbd_desc.c`, `usbd_cdc_if.c`,
+`usbd_conf.c`, the four `Middlewares/` class-stack files, `stm32f1xx_hal_pcd.c`,
+`stm32f1xx_hal_pcd_ex.c` and `stm32f1xx_ll_usb.c`, is **27 775 B in Debug** and
+**10 899 B in Release** — over half the Debug image. These are pre-`--gc-sections`
+object sizes, so the realised saving is smaller, and smaller again because the
+retained USB ISR keeps part of the PCD/LL layer linked (decision 6).
+
+`arm-none-eabi-size` is recorded after each implementation step rather than once
+at the end, so any regression is attributable to a single task. The levers, if it
+ever does tighten, in order:
+
+1. Ship from the Release preset — on its own this is a 24 KB difference.
+2. Vendor only ioLibrary's `Ethernet/` tree: no `Internet/`, so no DHCP, DNS,
    SNTP, HTTP or FTP.
-2. Add an `-Os` Release preset and ship the MODBUS variant from it.
 3. Drop the `ETH_INT` optimisation (section 8), which is pure addition.
 
 ## 12. Testing
