@@ -8,7 +8,7 @@ CC      ?= gcc
 # .c directly, which is how the tests reach static functions.
 CFLAGS  := -std=c11 -Wall -Wextra -Werror -g -O0 \
            -I../App/Inc -I../App/Src -Istubs -I.
-SUITES  := test_braille_dots
+SUITES  := test_braille_dots test_plc_packet
 
 BINDIR  := build
 BINS    := $(addprefix $(BINDIR)/,$(SUITES))
