@@ -39,6 +39,7 @@ add_subdirectory(cmake/stm32cubemx)
 
 # Add user libraries
 add_subdirectory(Lib/tmc2209)
+add_subdirectory(Lib/w5500)
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -73,6 +74,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     tmc2209
+    w5500
 
     # Add user defined libraries
 )
