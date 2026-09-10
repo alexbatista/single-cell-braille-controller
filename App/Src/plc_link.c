@@ -39,6 +39,10 @@
 /** @brief Largest frame either direction, so one buffer serves both. */
 #define PLC_FRAME_BUFFER_LEN 32u
 
+/** @brief Chunks drain_socket() will discard before giving up, so a chatty
+ *         peer cannot hold the main loop. The W5500's RX buffer is 16 KB. */
+#define PLC_DRAIN_MAX_CHUNKS 512u
+
 typedef enum {
   PLC_LINK_CHIP_FAULT = 0,   /**< No usable W5500; retry bring-up.       */
   PLC_LINK_LINK_WAIT,        /**< Chip is up, waiting for PHY link.      */
@@ -139,13 +143,39 @@ static void send_request(void) {
   enter(PLC_LINK_AWAITING_RESPONSE);
 }
 
+// Discard everything queued on the socket. Called whenever the byte stream
+// can no longer be trusted to start on a frame boundary: an oversized
+// backlog, a frame that failed validation, or a request we stopped waiting
+// for. Without this a desynced stream stays desynced, because nothing else
+// reopens the socket while TCP itself is healthy.
+static void drain_socket(void) {
+  for (uint16_t chunks = 0u; chunks < PLC_DRAIN_MAX_CHUNKS; ++chunks) {
+    uint16_t available = getSn_RX_RSR(PLC_SOCKET_NUMBER);
+    if (available == 0u) {
+      return;
+    }
+    if (available > (uint16_t)sizeof link.frame) {
+      available = (uint16_t)sizeof link.frame;
+    }
+    if (recv(PLC_SOCKET_NUMBER, link.frame, available) <= 0) {
+      return;
+    }
+  }
+}
+
 static void read_response(void) {
   uint16_t available = getSn_RX_RSR(PLC_SOCKET_NUMBER);
   if (available < MODBUS_READ_COILS_RSP_LEN(PLC_COIL_COUNT)) {
     return; // still arriving; the timeout in the caller bounds the wait
   }
   if (available > (uint16_t)sizeof link.frame) {
-    available = (uint16_t)sizeof link.frame;
+    // A backlog this large means the stream is already off a frame
+    // boundary: there is nothing worth parsing, only something to discard
+    // before the next request can resynchronise on a fresh boundary.
+    drain_socket();
+    report_fault();
+    enter(PLC_LINK_IDLE);
+    return;
   }
 
   int32_t received = recv(PLC_SOCKET_NUMBER, link.frame, available);
@@ -164,7 +194,9 @@ static void read_response(void) {
     // A rejected frame is a fault, not a snapshot: handing the reader values
     // from a frame we could not validate is worse than telling them the link
     // is unhappy. The connection itself is still good, so go back to idle
-    // rather than tearing it down.
+    // rather than tearing it down. Draining first guarantees the next
+    // request starts back on a frame boundary instead of staying desynced.
+    drain_socket();
     report_fault();
     enter(PLC_LINK_IDLE);
     return;
@@ -221,8 +253,10 @@ void plc_link_tick(void) {
     return;
 
   case PLC_LINK_LINK_WAIT:
-    // An unplugged cable sits here indefinitely, which is correct: there is
-    // nothing to retry and the reader has already been told once.
+    // An unplugged cable sits here until the PHY comes up -- there is
+    // nothing to retry -- but the reader still needs to be told about it
+    // periodically rather than only once, so silence is never mistaken for
+    // a dead device.
     if (wizphy_getphylink() == PHY_LINK_ON) {
       if (socket(PLC_SOCKET_NUMBER, Sn_MR_TCP, PLC_LOCAL_PORT,
                  SF_IO_NONBLOCK) != (int8_t)PLC_SOCKET_NUMBER) {
@@ -234,6 +268,12 @@ void plc_link_tick(void) {
       // Non-blocking, so SOCK_BUSY here means "in progress", not "failed".
       (void)connect(PLC_SOCKET_NUMBER, server_ip, PLC_SERVER_PORT);
       enter(PLC_LINK_CONNECTING);
+    } else if (elapsed_since(link.state_entered_ms, PLC_RECONNECT_DELAY_MS)) {
+      // No cable: report roughly every reconnect delay instead of never.
+      // reader_ui's own rate limiter, not this one, decides how often that
+      // fault actually sounds.
+      report_fault();
+      enter(PLC_LINK_LINK_WAIT); // restamp the timer, stay here
     }
     return;
 
@@ -277,7 +317,12 @@ void plc_link_tick(void) {
         elapsed_since(link.state_entered_ms, PLC_RESPONSE_TIMEOUT_MS)) {
       // The connection may well be fine and the PLC merely slow, but a reader
       // waiting on a value needs to be told something, and the next poll will
-      // try again.
+      // try again. Draining first means a reply that lands late cannot sit
+      // in the buffer and coalesce with the next poll's response -- without
+      // this, one recv() could absorb both and the parser would reject the
+      // whole blob over the stale leading transaction id, discarding a
+      // perfectly good trailing frame along with it.
+      drain_socket();
       report_fault();
       enter(PLC_LINK_IDLE);
     }
