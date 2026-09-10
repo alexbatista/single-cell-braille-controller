@@ -78,12 +78,12 @@ so a future reader does not re-litigate them.
    generated call site is not an option — it lies outside any USER CODE region
    and CubeMX would overwrite it.
 
-7. **`buzzer_play()` blocks, bounded at ≤ 400 ms.** This is a deliberate
+7. **`buzzer_play()` blocks, bounded at ≤ 500 ms.** This is a deliberate
    exception to the otherwise-cooperative design. PWM keeps sounding in hardware
    without ticks, so a tone started immediately before a ~1 s blocking disc move
    would sound for the whole move unless something stopped it. Blocking on these
    five short patterns removes that truncation bug and the buzzer tick entirely,
-   and 400 ms is imperceptible beside a move that already blocks for a second.
+   and 480 ms at worst is imperceptible beside a move that already blocks for a second.
    Buttons are EXTI-latched throughout, so no press is lost.
 
 ## 4. Architecture
@@ -231,6 +231,8 @@ total. Frequencies are named constants, never literals at the use site.
 | `PACKAGE_QUEUED` | 2093 Hz 40 ms × 3 | chirpy triple — new data is waiting |
 | `LINK_FAULT` | 220 Hz 200 ms × 2 | low double |
 | `BOUNDARY` | 330 Hz 40 ms | short low blip — nothing there: already at field 0, or nothing to repeat |
+
+Measured total durations: `REQUEST_SENT` 160 ms, `DATA_RECEIVED` 150 ms, `PACKAGE_QUEUED` 220 ms, `LINK_FAULT` 480 ms, `BOUNDARY` 40 ms.
 
 The three event sounds are separated by pitch *and* texture (rising pair vs.
 single tone vs. triple chirp), so they stay distinguishable through a small
