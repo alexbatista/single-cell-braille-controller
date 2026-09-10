@@ -198,7 +198,7 @@ glyph 0 of `plc_fields[cursor]` and arm the dwell timer. `LAST_FIELD` is
 | snapshot | `NO_DATA` | adopt, `cursor = -1`, `DATA_RECEIVED` → `RESTING`; cell stays blank, first NEXT shows field 0 |
 | snapshot | `RESTING` or `LABEL`, differs from current | fill pending slot, `PACKAGE_QUEUED` (rate-limited) |
 | snapshot | `RESTING` or `LABEL`, identical | ignored, silent |
-| link fault | any | `LINK_FAULT` (rate-limited); `AWAITING_POLL` returns to its previous state |
+| link fault | any | `LINK_FAULT` (rate-limited); `AWAITING_POLL` returns to `RESTING`, or `NO_DATA` when no package is held |
 | tick | `LABEL`, dwell expired | more label glyphs → render the next and re-arm; otherwise render the value → `RESTING` |
 | tick | `AWAITING_POLL`, timeout | take the link-fault path |
 
@@ -306,6 +306,12 @@ one-line change if that proves too slow or too fast in use.
 The current package is never discarded because of a communication failure: a
 reader mid-package keeps reading what they have, and only hears that the link
 is unhappy.
+
+A link fault during `AWAITING_POLL` returns to `RESTING` (or `NO_DATA` with no
+package held) rather than to whatever state was showing before the request,
+because that state's dwell timer is stale by the time the fault arrives;
+resuming it would make the sequence advance on its own instead of just holding
+still.
 
 ## 11. Flash budget
 
