@@ -1,15 +1,19 @@
 # Study guides — single-cell-braille-controller
 
-This is a Blue-Pill-class STM32F103 project (CubeMX generated Core, ST's USB
-device stack, a vendored TMC2209 stepper-driver library, and a hand-written App
-layer) that renders one braille cell. A character typed into a USB virtual COM
-port is decoded, translated into two disc angles, and rendered by two stepper
-motors turning discs whose positions raise the cell's six dots.
+This is a Blue-Pill-class STM32F103 project (CubeMX generated Core, a vendored
+TMC2209 stepper-driver library, a vendored W5500 Ethernet library, and a
+hand-written App layer) that renders one braille cell. By default, the device
+reads a fixed package of 11 boolean signals from a PLC over MODBUS TCP and
+renders them one key/value pair at a time, navigated by three buttons and
+confirmed by a buzzer, so the whole interface is usable without sight. A
+character typed into a USB virtual COM port and rendered directly, the
+original input path, still exists but is now the non-default build variant —
+see [06-usb-cdc.md](06-usb-cdc.md).
 
-These guides exist because the codebase mixes five different "levels" of code
-(register/CMSIS, ST HAL, a vendored driver library, ST's USB middleware, and
-your own App code), and it's easy to lose track of which file is responsible
-for what.
+These guides exist because the codebase mixes several different "levels" of
+code (register/CMSIS, ST HAL, vendored driver libraries, ST's USB middleware,
+and your own App code), and it's easy to lose track of which file is
+responsible for what.
 
 Read them in order the first time; after that, use them as reference.
 
@@ -32,9 +36,10 @@ Read them in order the first time; after that, use them as reference.
 5. **[05-is-it-overengineered.md](05-is-it-overengineered.md)** — a direct,
    evidence-based answer to "is this too abstracted for what it does,"
    including the three places where the answer is genuinely "a little, yes."
-6. **[06-usb-cdc.md](06-usb-cdc.md)** — the USB virtual-COM-port path: why
-   `Middlewares/` and `USB_DEVICE/` exist, how the stack was enabled, the full
-   interrupt call chain in both directions, and a line-by-line reading of
+6. **[06-usb-cdc.md](06-usb-cdc.md)** — the USB virtual-COM-port path (the
+   non-default `BRAILLE_INPUT=USB_CDC` build variant): why `Middlewares/`
+   and `USB_DEVICE/` exist, how the stack was enabled, the full interrupt
+   call chain in both directions, and a line-by-line reading of
    `CDC_Receive_FS` / `CDC_Transmit_FS` / `CDC_ReadChar` / `App_run`.
 7. **[07-character-encoding.md](07-character-encoding.md)** — how a keypress
    becomes a disc angle: codepoints vs. bytes, why UTF-8 splits every accented
@@ -49,6 +54,20 @@ Read them in order the first time; after that, use them as reference.
    a mirrored disc renders instead, and the four-phase homing routine that
    makes an absolute angle mean anything — including every bound it is limited
    by and how it reports failure.
+9. **[09-modbus-tcp-and-plc-link.md](09-modbus-tcp-and-plc-link.md)** — the
+   default input path: why the device is a MODBUS TCP client and what that
+   means for "the PLC sent something," the request/response frame byte by
+   byte, why the response parser is strict, the `plc_link` connection state
+   machine, and what to check when the W5500 SPI link will not come up.
+10. **[10-reader-ui-and-buzzer.md](10-reader-ui-and-buzzer.md)** — the
+    reading model: why one button press plays a whole labelled value, the
+    label table and the invariant that keeps mixed-length labels
+    unambiguous, the four navigation states, why there is one pending
+    package slot instead of a queue, and the five buzzer patterns.
+11. **[11-hardware-bring-up.md](11-hardware-bring-up.md)** — the checklist of
+    hardware verification this firmware still needs, in the order to attempt
+    it: SPI first, then the buzzer, then the buttons, then an end-to-end
+    read against a real PLC.
 
 ## Project map (for orientation)
 
@@ -59,16 +78,24 @@ Core/       STM32CubeMX-generated boilerplate: clocks, GPIO init, USART init,
             comment blocks here.
 Drivers/    ST-supplied CMSIS device headers + STM32F1xx HAL driver source.
             Third-party, never edited.
-Middlewares/  ST's USB Device Library (core + CDC class). Vendor code.
+Middlewares/  ST's USB Device Library (core + CDC class). Vendor code, only
+            linked in the non-default USB_CDC build variant.
 USB_DEVICE/   CubeMX glue binding that library to this MCU, plus usbd_cdc_if.c,
-            where the receive ring buffer and CDC_ReadChar() live.
+            where the receive ring buffer and CDC_ReadChar() live. Same
+            USB_CDC-only condition as Middlewares/.
 Lib/tmc2209/  Vendored, portable TMC2209 driver library (core + STM32 port).
             Third-party-style code, but small enough to read in full.
-App/        Your own application code: app_main.c (the two entry points),
-            braille_disc.c (UTF-8 byte -> braille cell -> disc angles),
-            motion_planner.c (both motors, moves, homing), and the stepper
-            module (portable core + STM32 port). This is what you're adding
-            to; everything else is scaffolding underneath it.
+Lib/w5500/    Vendored WIZnet ioLibrary (Ethernet/ tree only) plus a
+            w5500_stm32.c SPI/CS/reset port, same core+port split as
+            Lib/tmc2209. Always linked; it is what the default MODBUS build
+            talks to the PLC through.
+App/        Your own application code: app_main.c (the two entry points, one
+            wiring per input variant), braille_disc.c (character/dot-pattern
+            -> disc angles), motion_planner.c (both motors, moves, homing),
+            the stepper module (portable core + STM32 port), and — in the
+            default MODBUS variant — plc_link.c, modbus_tcp.c, plc_packet.c,
+            reader_ui.c, buttons.c, buzzer.c and fault_led.c. This is what
+            you're adding to; everything else is scaffolding underneath it.
 docs/       These guides. docs/html is Doxygen output generated from the App
             sources (see Doxyfile) and is not tracked by git.
 ```
@@ -84,8 +111,23 @@ docs/       These guides. docs/html is Doxygen output generated from the App
 | ZERO sensor | PA9 | PA8 |
 | Disc | single row: dots 1, 4 (4 positions) | double row: dots 2, 3, 5, 6 (16 positions) |
 
-Plus the onboard LED on PC13, used for both the "byte received" toggle and the
-per-motor fault blink codes.
+The default MODBUS build adds the W5500 Ethernet link, the buzzer and the
+three navigation buttons:
+
+| Signal | Pin | Notes |
+|---|---|---|
+| `ETH_NSS` (SPI2 chip select) | PB12 | software-driven, active low |
+| SPI2 SCK / MISO / MOSI | PB13 / PB14 / PB15 | mode 0, MSB-first, 12 Mbit/s |
+| `ETH_RESET` | PA10 | held low to reset the W5500 |
+| `ETH_INT` | PB5 | wired and owned, but unused by design — see [09-modbus-tcp-and-plc-link.md §9.6](09-modbus-tcp-and-plc-link.md#96-eth_int-pb5-wired-owned-deliberately-unused) |
+| `BUZZER` | PB6 (TIM4_CH1) | piezo tone patterns, see [10-reader-ui-and-buzzer.md §10.5](10-reader-ui-and-buzzer.md#105-why-the-buzzer-blocks-and-the-five-patterns) |
+| `BTN_REPEAT` | PB7 | falling edge, EXTI9_5 |
+| `BTN_NEXT` | PB8 | falling edge, EXTI9_5 |
+| `BTN_PREV` | PB9 | falling edge, EXTI9_5 |
+
+Plus the onboard LED on PC13: the "byte received" toggle in the USB_CDC
+variant, and in both variants the boot-time subsystem fault blink codes
+(`fault_led.c`) — motor 1, motor 2, or the W5500/Ethernet link.
 
 ## Not covered in depth
 

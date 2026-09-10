@@ -1,9 +1,11 @@
 # 2. Execution flow
 
-A trace of everything that happens from power-on to a braille cell being
-rendered, in the order it actually executes. Read this next to
-`App/Src/app_main.c`, `App/Src/motion_planner.c` and `Core/Src/main.c` open
-side by side.
+A trace of everything that happens from power-on to the device being usable,
+in the order it actually executes. This describes the default MODBUS build
+(`BRAILLE_INPUT=MODBUS`); where the USB_CDC variant differs, it's called out
+inline and covered in full in [06-usb-cdc.md](06-usb-cdc.md). Read this next
+to `App/Src/app_main.c`, `App/Src/motion_planner.c`, `App/Src/plc_link.c` and
+`Core/Src/main.c` open side by side.
 
 ## 2.1 Boot, before `main()`
 
@@ -29,42 +31,64 @@ main()
  ├─ MX_USART3_UART_Init()      USART3 @ 115200 8N1 → motor 2 (PB10 TX / PB11 RX)
  ├─ MX_TIM2_Init()             STEP timer motor 1: PSC 47, PWM1 on CH2 (PA1)
  ├─ MX_TIM3_Init()             STEP timer motor 2: PSC 47, PWM1 on CH4 (PB1)
- ├─ MX_USB_DEVICE_Init()       USB CDC stack up and enumerating (see 06)
- ├─ App_init(&huart2, &huart3, &htim2, &htim3)  ── one-time setup, see 2.3
+ ├─ MX_USB_DEVICE_Init()       MODBUS build: usb_device_stub.c's no-op (06);
+ │                             USB_CDC build: real stack, enumerating (see 06)
+ ├─ MX_SPI2_Init()             SPI2 @ 12 Mbit/s, mode 0 MSB-first → W5500
+ ├─ MX_TIM4_Init()             PSC 47 → 1 MHz tick, PWM ready → buzzer
+ ├─ App_init(&huart2, &huart3, &htim2, &htim3, &htim4, &hspi2)  ── see 2.3
  └─ while (1) { App_run(); }   ── forever, see 2.4
 ```
 
 Two numbers from this block matter later:
 
-- **`SYSCLK = 48 MHz`** is not a performance choice, it's a USB requirement:
-  the F1 USB peripheral needs exactly 48 MHz, which is why the PLL multiplier
-  is ×6 from an 8 MHz HSE. It is also what
-  `tmc2209_stm32_delay_microseconds()` uses to convert microseconds into DWT
-  cycle counts.
+- **`SYSCLK = 48 MHz`** was originally a USB requirement — the F1 USB
+  peripheral needs exactly 48 MHz — and the clock tree still targets it even
+  though the default build never enumerates USB. `Core/Src/main.c` is
+  CubeMX-generated from the `.ioc` file and is not conditioned on
+  `BRAILLE_INPUT`, so removing the USB peripheral from the clock tree would
+  mean removing it from the `.ioc` — a bigger change than switching build
+  variants, and one that would force every other timing derived from this
+  tree (SPI2's prescaler, both USARTs' baud dividers,
+  `tmc2209_stm32_delay_microseconds()`) to be re-derived along with it. See
+  [06-usb-cdc.md](06-usb-cdc.md) for the rest of what stays linked for the
+  same reason.
 - **The STEP timers tick at 1 MHz.** APB1 runs at 24 MHz, and because its
   prescaler is not 1 the timer clock is doubled to 48 MHz (RM0008 clock
   tree); `PSC = 47` then divides that by 48. `stepper_hal.c` derives this at
   runtime rather than hardcoding it (`timer_tick_hz()`), so retuning the clock
-  tree in CubeMX does not silently change every step rate.
+  tree in CubeMX does not silently change every step rate. TIM4 (the buzzer)
+  uses the same `PSC = 47` for the same reason — a 1 MHz tick that
+  `buzzer.c` turns directly into `ARR = 1000000 / frequency_hz - 1`.
 
-`MX_USB_DEVICE_Init()` running *before* `App_init()` is deliberate: the host
-can enumerate the device and start filling the receive ring while the discs
-are still homing. Nothing consumes those bytes until the first `App_run()`.
+`MX_USB_DEVICE_Init()` running *before* `App_init()` matters only for the
+USB_CDC variant: the host can enumerate the device and start filling the
+receive ring while the discs are still homing. In the default build it is a
+no-op either way — `App/Src/usb_device_stub.c` supplies it, because
+`Core/Src/main.c` calls it unconditionally and cannot be edited to guard the
+call (06).
 
 Everything before `App_init()` is Core/ handing you two ready-to-use
-`UART_HandleTypeDef*`, two ready-to-use `TIM_HandleTypeDef*`, a live USB
-device, and correctly configured GPIO pins. Everything from `App_init()`
-onward is your code.
+`UART_HandleTypeDef*`, two ready-to-use `TIM_HandleTypeDef*`, a ready-to-use
+`SPI_HandleTypeDef*`, a third `TIM_HandleTypeDef*` for the buzzer, and
+correctly configured GPIO pins. Everything from `App_init()` onward is your
+code.
 
 ## 2.3 `App_init()` — one-time setup
 
-`app_main.c` keeps this to two calls:
+`app_main.c` brings the motors and discs up first, then — in the MODBUS
+variant — the buzzer, buttons, reader and PLC link:
 
 ```c
-void App_init(UART_HandleTypeDef *huart_01, UART_HandleTypeDef *huart_02,
-              TIM_HandleTypeDef *htim_01, TIM_HandleTypeDef *htim_02) {
-  initialize_motors(huart_01, huart_02, htim_01, htim_02);
+void App_init(UART_HandleTypeDef *huart_m1, UART_HandleTypeDef *huart_m2,
+              TIM_HandleTypeDef *htim_m1, TIM_HandleTypeDef *htim_m2,
+              TIM_HandleTypeDef *htim_buzzer, SPI_HandleTypeDef *hspi_eth) {
+  initialize_motors(huart_m1, huart_m2, htim_m1, htim_m2);
   (void)calibrate_zero_position();
+
+  buzzer_init(htim_buzzer, APP_BUZZER_TIM_CHANNEL);
+  buttons_init();
+  reader_ui_init(&app_reader_io);
+  plc_link_init(hspi_eth, &app_link_io);
 }
 ```
 
@@ -91,7 +115,7 @@ sequenceDiagram
     MP->>TMCcore: is_setup_and_communicating()?
     TMCcore-->>MP: true/false
     alt false
-        MP->>MP: blink_warning(1) — blink LED, keep going
+        MP->>MP: fault_led_blink(FAULT_LED_CODE_MOTOR_01) — blink LED, keep going
     end
     MP->>MP: (repeat motor_driver_init for motor 2, USART3, ENN=PB0)
     MP->>Step: motor_stepper_init(motor 1: TIM2_CH2, DIR=PA4, invert_dir=true)
@@ -135,12 +159,14 @@ Step by step, in prose:
      low through the HAL.
    - `tmc2209_is_setup_and_communicating()` — reads registers back over
      UART to confirm the chip actually answered. If this returns `false`,
-     `blink_warning()` blinks the onboard LED (1 short blink for motor
-     1, 2 for motor 2, repeated 3 times) but **does not halt** — every
-     config call above is write-only over a half-duplex UART line, so the
-     motor still runs even if the RX half of the link is broken; only
-     read-back and diagnostics are lost. The comment in the code names the
-     likely fix (check the `PDN_UART` wiring).
+     `fault_led_blink()` blinks the onboard LED with that motor's code (1 or
+     2 short blinks, repeated 3 times — moved to `fault_led.c` so
+     `plc_link.c` can share the same reporting mechanism for a third fault
+     code; see [09-modbus-tcp-and-plc-link.md](09-modbus-tcp-and-plc-link.md))
+     but **does not halt** — every config call above is write-only over a
+     half-duplex UART line, so the motor still runs even if the RX half of
+     the link is broken; only read-back and diagnostics are lost. The
+     comment in the code names the likely fix (check the `PDN_UART` wiring).
 3. **`motor_stepper_init()` runs once per motor**, binding the STEP timer
    channel and the DIR pin to a `Stepper_t` instance (`App/Inc/stepper.h`).
    Two details worth noting: the `ENN` pin is *not* passed here — it's already
@@ -164,51 +190,100 @@ reference. `calibrate_zero_position()` homes each disc against its ZERO
 sensor (`ZERO_MOTOR01` on PA9, `ZERO_MOTOR02` on PA8) and declares that point
 position 0.
 
-This is the last blocking thing in startup, and it takes several seconds per
-disc — the design goal is "never spin forever inside `App_init()`", not "boot
-instantly" ([08](08-motion-and-homing.md) §8.7 has the arithmetic). A disc whose sensor never changes state is *not* fatal: the
-search is bounded, the motor's blink code is flashed, and startup continues so
-the USB port stays available for diagnosing the sensor — which is exactly why
-`app_main.c` can afford to ignore the return value with `(void)`. The full
-routine, its bounds and its rate limits are covered in
+This is the last blocking thing in startup before the buzzer and link come
+up, and it takes several seconds per disc — the design goal is "never spin
+forever inside `App_init()`", not "boot instantly"
+([08](08-motion-and-homing.md) §8.7 has the arithmetic). A disc whose sensor
+never changes state is *not* fatal: the search is bounded, the motor's blink
+code is flashed, and startup continues — which is exactly why `app_main.c`
+can afford to ignore the return value with `(void)`. The full routine, its
+bounds and its rate limits are covered in
 [08-motion-and-homing.md](08-motion-and-homing.md).
 
-## 2.4 `App_run()` — the forever loop
+### 2.3.3 Buzzer, buttons and the PLC link — bring-up for the MODBUS variant
 
-Called back-to-back, forever, from `main()`'s `while(1)`. Each call handles at
-most one received byte and returns:
+Three cheap calls and one that blocks:
+
+- `buzzer_init(htim_buzzer, APP_BUZZER_TIM_CHANNEL)` just stores the timer
+  handle and channel — TIM4 was already configured for PWM by
+  `MX_TIM4_Init()`, so there is nothing left to do at init time. It runs
+  before the link deliberately, so a W5500 that turns out to be missing can
+  report that fact out loud from inside the next call.
+- `buttons_init()` clears the three buttons' debounce state.
+- `reader_ui_init(&app_reader_io)` resets the cursor, the current and
+  pending packages, and the sound rate limiters. Nothing is rendered yet.
+- `plc_link_init(hspi_eth, &app_link_io)` is the one that blocks, for about
+  12 ms: it pulses the W5500's reset line low for `PLC_W5500_RESET_LOW_MS`
+  and waits `PLC_W5500_BOOT_MS` after release
+  ([w5500_stm32.c:84-89](../Lib/w5500/w5500_stm32.c#L84-L89)), then reads
+  the chip's `VERSIONR` register and expects `0x04`
+  ([plc_link.c:106-108](../App/Src/plc_link.c#L106-L108)). A W5500 that does
+  not answer is reported with `FAULT_LED_CODE_ETHERNET` and the link enters
+  `CHIP_FAULT`, retried later from the main loop — it does not stop startup,
+  the same philosophy as a disc that fails to home. A W5500 that does answer
+  applies the static network identity from `plc_config.h`
+  (`wizchip_init()`, `wizchip_setnetinfo()`) and the link enters `LINK_WAIT`.
+
+Full breakdown of the state machine this hands off to, including what each
+state is waiting for: [09-modbus-tcp-and-plc-link.md §9.4](09-modbus-tcp-and-plc-link.md#94-the-plc_link-state-diagram).
+
+**The first poll happens later, once the main loop is already running.**
+`App_init()` does not wait for a cable, a TCP connection, or a PLC reply —
+it only brings the chip up. From here, `plc_link_tick()` (2.4) has to be
+called repeatedly before the link can progress: `LINK_WAIT` until the PHY
+reports a live cable, then `CONNECTING` until the TCP handshake completes,
+then `IDLE`, where the very first automatic poll goes out after at most
+`PLC_POLL_INTERVAL_MS` (500 ms). Its answer is what first calls
+`reader_ui_on_snapshot()` — the reader adopts that package silently, plays
+`DATA_RECEIVED`, and waits at `cursor == -1` for the first `NEXT` press. On
+real hardware with a cable already plugged in and a PLC already listening,
+this whole sequence — cable up, TCP connected, first request, first reply —
+typically finishes within a couple of poll intervals of the main loop
+starting.
+
+## 2.4 `App_run()` — the cooperative tick
+
+Called back-to-back, forever, from `main()`'s `while(1)`. In the default
+MODBUS build, each call services three things in a fixed order and returns:
 
 ```
-App_run()
- ├─ CDC_ReadChar(&c)                    → nothing pending? return immediately
- ├─ HAL_GPIO_TogglePin(LED)             → visible proof a byte arrived
- ├─ CDC_Transmit_FS(&c, 1)              → echo it back to the host terminal
- └─ translate_char_on_disc(c)           → braille_disc.c
-     ├─ utf8_decode_byte(c)             → codepoint, or "not yet / invalid"
-     ├─ pattern_for_char()              → 6-dot bitmask from the table
-     ├─ weight + angle per disc         → disk_angles_t {single_row, double_row}
-     └─ move_to_angle(cell)             → motion_planner.c, blocks until arrival
-         ├─ steps_to_angle() ×2         → shortest signed microstep delta
-         ├─ start_move() ×2             → DIR + Stepper_MoveSteps(1600 Hz)
-         └─ wait_until_idle()           → spins while either stepper is busy
+App_run()                                      App/Src/app_main.c
+ ├─ buttons_take_event()                → one flag, if any pending, else READER_EV_NONE
+ │   └─ reader_ui_on_event(event)       → reader_ui.c: may render (blocks ~1 s) + play a sound (blocks up to 480 ms)
+ ├─ plc_link_tick()                     → plc_link.c: connect / poll / timeout / reconnect, see 09 §9.4
+ │   └─ on_snapshot() / on_fault()      → reader_ui_on_snapshot() / reader_ui_on_link_fault()
+ │        (same call stack — may also render + play a sound)
+ └─ reader_ui_tick()                    → advances the label dwell if it has elapsed; may render (blocks)
 ```
+
+The order is deliberate, and stated in the module's own header comment:
+buttons first, "because they are the only thing a person is waiting on"; the
+link next, "so a poll goes out as soon as it is due"; the sequencer last,
+"since its work is timer-driven and a pass of delay costs nothing"
+([app_main.c:7-10](../App/Src/app_main.c#L7-L10)).
 
 Three consequences fall out of that shape:
 
-- **One byte per call, one move per character.** A multi-byte UTF-8 sequence
-  (every accented letter arrives as two bytes) consumes two `App_run()` calls
-  but produces exactly one disc move: the decoder returns a "nothing yet"
-  sentinel for the lead byte, and `translate_char_on_disc()` returns without
-  touching the motors. See [07-character-encoding.md](07-character-encoding.md).
-- **The move is blocking, the reception is not.** `move_to_angle()` spins in
-  `wait_until_idle()` until both discs arrive — at most half a revolution at
-  1600 microsteps/s, so on the order of half a second. During that time no
-  byte is consumed, but the USB interrupt keeps filling the ring buffer behind
-  your back. That asymmetry is the whole reason the ring exists
-  ([06-usb-cdc.md](06-usb-cdc.md)).
-- **Nothing is polled to make the motors turn.** The busy-wait is waiting on
-  interrupts, not driving anything: the pulses come out of the timer hardware.
-  That's the next section.
+- **Two calls can block, both bounded.** A disc move (`braille_render_char`/
+  `braille_render_dots`, ultimately `move_to_angle()`) takes up to about a
+  second; a buzzer pattern takes up to 480 ms
+  ([10-reader-ui-and-buzzer.md §10.5](10-reader-ui-and-buzzer.md#105-why-the-buzzer-blocks-and-the-five-patterns)).
+  Both are deliberate exceptions to an otherwise non-blocking loop. Nothing
+  is lost while either runs: button presses are latched by their EXTI
+  callback the whole time, and the W5500's socket keeps whatever the PLC
+  sent queued in its own 16 KB RX buffer until the next `plc_link_tick()`.
+- **`plc_link_tick()` can itself trigger a render.** A poll answering while
+  `reader_ui` is `AWAITING_POLL` calls `reader_ui_on_snapshot()` straight
+  from inside `plc_link_tick()`'s call stack, which can render immediately —
+  that is the right moment for the discs to move, not something deferred to
+  a later pass.
+- **Nothing is polled to make the motors turn**, exactly as in the USB_CDC
+  variant: the busy-wait inside a render is waiting on the STEP timer
+  interrupts, not driving anything itself. That's the next section.
+
+The USB_CDC variant's loop is simpler and unchanged from before this
+project added MODBUS support — one byte in, one echo out, one disc move —
+and is covered in full in [06-usb-cdc.md](06-usb-cdc.md).
 
 ## 2.5 One microstep, all the way down
 
@@ -264,12 +339,16 @@ Points worth holding onto:
 
 | Interrupt | Priority | Body | Does what |
 |---|---|---|---|
-| `USB_LP_CAN1_RX0_IRQn` | 0 | `HAL_PCD_IRQHandler` → `CDC_Receive_FS` | Copies received bytes into the CDC ring buffer |
+| `USB_LP_CAN1_RX0_IRQn` | 0 | `HAL_PCD_IRQHandler` → `CDC_Receive_FS` | USB_CDC variant: copies received bytes into the CDC ring buffer. MODBUS variant: the vector and `HAL_PCD_IRQHandler` stay linked (06), but the interrupt is never enabled, so this never runs. |
+| `EXTI9_5_IRQn` | 0 | `HAL_GPIO_EXTI_IRQHandler` ×4 → `HAL_GPIO_EXTI_Callback` → `buttons_on_exti()` + `plc_link_on_exti()` | MODBUS variant only: latches a debounced button press, or notes (unused by design) that the W5500 asserted `ETH_INT` — see [09-modbus-tcp-and-plc-link.md §9.6](09-modbus-tcp-and-plc-link.md#96-eth_int-pb5-wired-owned-deliberately-unused) |
 | `TIM2_IRQn` | 0 | `HAL_TIM_IRQHandler` → `Stepper_OnPulseComplete(motor 1)` | Counts one STEP pulse, stops the train on the last |
 | `TIM3_IRQn` | 0 | same, motor 2 | " |
 | `SysTick` | 0 | `HAL_IncTick` | Feeds `HAL_Delay()` / `HAL_GetTick()` |
 
-Everything else — TMC2209 UART traffic, the UTF-8 decoder, angle math, homing
-— runs in the main loop. The UTF-8 decoder in particular keeps state between
-calls and is documented as main-loop-only for exactly that reason; the USB ISR
-must stay a pure producer.
+Everything else — TMC2209 UART traffic (still polled, unchanged), SPI2
+traffic to the W5500 (also polled, touched only from `plc_link_tick()`;
+`w5500_stm32.c`'s critical-section callbacks are no-ops because nothing else
+ever touches that bus), TIM4's buzzer PWM (retuned from the main loop, then
+left to run in hardware with zero CPU involvement until the next retune),
+the UTF-8 decoder (USB_CDC variant only), the reader's cursor and dwell
+logic — runs in the main loop.
