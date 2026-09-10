@@ -1,5 +1,30 @@
 # 6. USB CDC (virtual COM port) — how the whole path actually works
 
+> **This is now the non-default build variant.** The product is the MODBUS
+> TCP reader ([09](09-modbus-tcp-and-plc-link.md), [10](10-reader-ui-and-buzzer.md)):
+> a fixed build-time choice, `-DBRAILLE_INPUT=USB_CDC`, compiles the
+> typed-character path this guide describes instead. It was kept, not
+> deleted, because it is the cheapest way to bench-test the disc rendering
+> and the braille pattern table without a PLC, a W5500, or a network on the
+> bench — type a character, watch the cell. The two variants are mutually
+> exclusive at compile time (`CMakeLists.txt`'s `BRAILLE_INPUT` cache
+> option); nothing here runs alongside the MODBUS reader.
+>
+> Choosing the MODBUS build does not delete this code from the tree, but it
+> does drop `Middlewares/` and `USB_DEVICE/` from the link entirely (6.1).
+> Two references to them survive anyway, in generated code that cannot be
+> guarded: `Core/Src/main.c` calls `MX_USB_DEVICE_Init()` unconditionally,
+> and `Core/Src/stm32f1xx_it.c`'s `USB_LP_CAN1_RX0_IRQHandler` calls
+> `HAL_PCD_IRQHandler(&hpcd_USB_FS)` — kept alive through `--gc-sections`
+> because it is still in the vector table. Both call sites sit outside any
+> `USER CODE` block, so editing them would be undone by the next CubeMX
+> regeneration. `App/Src/usb_device_stub.c` supplies a no-op
+> `MX_USB_DEVICE_Init()` and an unused `hpcd_USB_FS` instead, which satisfies
+> the link without touching generated files. The handler this keeps linked
+> can never actually run in the MODBUS build: nothing ever calls
+> `HAL_NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn)`, because that call lives in
+> `usbd_conf.c`, which is one of the files dropped from the link.
+
 This guide explains the USB side of the firmware: why the `Middlewares/` and
 `USB_DEVICE/` folders exist, how the USB stack was turned on, what runs in
 interrupt context versus in the main loop, and a line-by-line reading of
@@ -129,7 +154,7 @@ what ST expects each hook to do.)
 
 ### 6.2.4 At runtime — `MX_USB_DEVICE_Init()`
 
-[Core/Src/main.c:96](../Core/Src/main.c#L96) calls it *before* `App_init()`, so
+[Core/Src/main.c:97](../Core/Src/main.c#L97) calls it *before* `App_init()`, so
 the device is already enumerating while the motors are being configured:
 
 ```c
@@ -260,7 +285,7 @@ Two things fall straight out of this diagram:
   The existing implementation obeys this — it only copies bytes.
 - **`CDC_Transmit_FS` is asynchronous and can silently fail.** It returns
   `USBD_BUSY` if the previous packet hasn't been acknowledged yet, and
-  [app_main.c:33](../App/Src/app_main.c#L33) ignores the return value. Type
+  [app_main.c:49](../App/Src/app_main.c#L49) ignores the return value. Type
   fast and you'll lose echoed characters — not received ones.
 
 ---
@@ -374,7 +399,7 @@ That said, its timing shapes the *behaviour* you observe:
 
 - `translate_char_on_disc(c)` → `move_to_angle()` blocks until both discs
   have arrived — a `while (Stepper_IsBusy(...))` spin in `wait_until_idle()`
-  ([motion_planner.c](../App/Src/motion_planner.c#L190)). The planner always
+  ([motion_planner.c:165-169](../App/Src/motion_planner.c#L165-L169)). The planner always
   takes the shortest path, so the worst case is half a revolution at 1600
   microsteps/s: on the order of half a second per character. During that time
   `App_run()` never returns, so **no byte is consumed** — yet USB keeps
