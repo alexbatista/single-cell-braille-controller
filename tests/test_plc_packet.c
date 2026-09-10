@@ -89,5 +89,11 @@ int main(void) {
   CHECK(plc_snapshot_equal(none, all) == false);
   CHECK(plc_snapshot_equal(all, all) == true);
 
+  /* Verify that plc_snapshot_bit() returns false for out-of-range indices.
+   * We use the all-bits snapshot so a returned false can only mean the range
+   * guard fired, not that the bit happened to be zero. */
+  CHECK(plc_snapshot_bit(all, (uint8_t)PLC_FIELD_COUNT) == false);
+  CHECK(plc_snapshot_bit(all, (uint8_t)(PLC_FIELD_COUNT + 5u)) == false);
+
   TESTS_REPORT("plc_packet");
 }
