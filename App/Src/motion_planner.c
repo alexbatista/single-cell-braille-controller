@@ -7,6 +7,7 @@
 #include "stepper.h"
 #include "stepper_hal.h"
 #include "motion_planner.h"
+#include "fault_led.h"
 #include "stm32f103xb.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_tim.h"
@@ -44,17 +45,6 @@
 // them, so everything above it keeps counting positive steps as increasing
 // angle. Set this false for a motor rebuilt with the rotation the other way.
 #define APP_MOTOR_DIR_INVERTED true
-
-// LED blink codes: each motor reports faults as its own number in the
-// schematic.
-#define APP_MOTOR_01_BLINK_CODE 1u
-#define APP_MOTOR_02_BLINK_CODE 2u
-
-// Shape of a blink code: <code> short blinks, a long gap, repeated.
-#define APP_WARNING_BURSTS 3u
-#define APP_WARNING_ON_MS 100u
-#define APP_WARNING_OFF_MS 200u
-#define APP_WARNING_GAP_MS 800u
 
 // Disc angles are expressed in tenths of a degree (see disk_angles_t).
 #define APP_ANGLE_TENTHS_PER_REV 3600u
@@ -101,21 +91,6 @@ static bool motor_driver_init(tmc2209_t *tmc, tmc2209_stm32_t *tmc_port,
   return tmc2209_is_setup_and_communicating(tmc);
 }
 
-// Report a startup fault without halting: <blinks> short blinks, a long
-// pause, three times over, then carry on. Every caller passes the motor index
-// so the pattern says which motor is affected.
-static void blink_warning(uint32_t blinks) {
-  for (uint32_t burst = 0u; burst < APP_WARNING_BURSTS; ++burst) {
-    for (uint32_t i = 0u; i < blinks; ++i) {
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-      HAL_Delay(APP_WARNING_ON_MS);
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-      HAL_Delay(APP_WARNING_OFF_MS);
-    }
-    HAL_Delay(APP_WARNING_GAP_MS);
-  }
-}
-
 // Bind a stepper instance to its DIR pin and to the timer channel that
 // drives the STEP output. The ENN pin already belongs to the motor's tmc2209
 // instance, so the stepper port gets no enable pin.
@@ -157,11 +132,11 @@ void initialize_motors(UART_HandleTypeDef *huart_01,
   // ~1k into PDN_UART, RX tied directly to it.
   if (!motor_driver_init(&tmc_motor_01, &tmc_port_motor_01, huart_01->Instance,
                          ENABLE_MOTOR01_GPIO_Port, ENABLE_MOTOR01_Pin)) {
-    blink_warning(APP_MOTOR_01_BLINK_CODE);
+    fault_led_blink(FAULT_LED_CODE_MOTOR_01);
   }
   if (!motor_driver_init(&tmc_motor_02, &tmc_port_motor_02, huart_02->Instance,
                          ENABLE_MOTOR02_GPIO_Port, ENABLE_MOTOR02_Pin)) {
-    blink_warning(APP_MOTOR_02_BLINK_CODE);
+    fault_led_blink(FAULT_LED_CODE_MOTOR_02);
   }
 
   motor_stepper_init(&stepper_motor_01, &stepper_hal_motor_01, htim_01,
@@ -336,14 +311,14 @@ bool calibrate_zero_position(void) {
   if (home_disc(&stepper_motor_01, ZERO_MOTOR01_GPIO_Port, ZERO_MOTOR01_Pin)) {
     Stepper_SetPosition(&stepper_motor_01, APP_ZERO_POSITION_STEPS);
   } else {
-    blink_warning(APP_MOTOR_01_BLINK_CODE);
+    fault_led_blink(FAULT_LED_CODE_MOTOR_01);
     homed = false;
   }
 
   if (home_disc(&stepper_motor_02, ZERO_MOTOR02_GPIO_Port, ZERO_MOTOR02_Pin)) {
     Stepper_SetPosition(&stepper_motor_02, APP_ZERO_POSITION_STEPS);
   } else {
-    blink_warning(APP_MOTOR_02_BLINK_CODE);
+    fault_led_blink(FAULT_LED_CODE_MOTOR_02);
     homed = false;
   }
 
