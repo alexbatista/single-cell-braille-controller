@@ -63,7 +63,7 @@ made a sound.
   - [ ] Boot the board and confirm the first background poll succeeds —
     listen for `DATA_RECEIVED` with no button pressed, which only happens on
     the very first snapshot ever adopted
-    ([reader_ui.c:186-193](../App/Src/reader_ui.c#L186-L193)).
+    ([reader_ui.c:185-194](../App/Src/reader_ui.c#L185-L194)).
   - [ ] Walk all eleven fields with `NEXT`, cross-checking every value glyph
     against the PLC simulator's actual coil states, not just against what
     the firmware itself reports.

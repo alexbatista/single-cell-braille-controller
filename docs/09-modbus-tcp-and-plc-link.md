@@ -120,8 +120,13 @@ count, an exception response, or a null/out-of-range argument. Most of these
 guard against a frame that is simply broken. The transaction id check guards
 against something more dangerous: **a frame that is not broken at all.**
 
-Only one request is ever outstanding — `plc_link` will not send a second one
-until the first is answered or has timed out
+Only one request is ever outstanding — `send_request()` is called only from
+the `IDLE` state's handler
+([plc_link.c:296-305](../App/Src/plc_link.c#L296-L305)), and sending moves the
+link straight to `AWAITING_RESPONSE`, so nothing can trigger a second request
+until a response or a timeout brings the link back to `IDLE`. The explicit
+out-of-cycle trigger respects this too: `plc_link_request_now()` refuses to
+set `poll_requested` while the link is already `AWAITING_RESPONSE`
 ([plc_link.c:231-235](../App/Src/plc_link.c#L231-L235)). But a timeout does
 not mean the PLC gave up; it means the reply did not arrive in time. Suppose
 it shows up a moment later, just as the next poll's request and reply are also

@@ -158,9 +158,9 @@ they asked to go a second ago, not where they are now.
 | `REPEAT` | reading has started | re-present the current field from glyph 0 |
 | `REPEAT` | before reading has started | `BOUNDARY` blip |
 | a poll answers | reader was `AWAITING_POLL` | adopt it as the answer regardless of whether it differs from the old package |
-| a poll answers | reader had no package yet | adopt silently, `cursor = -1`; first `NEXT` shows field 0 |
+| a poll answers | reader had no package yet | adopt without rendering, play `DATA_RECEIVED`; `cursor = -1` so the cell stays blank until the first `NEXT` shows field 0 |
 | a poll answers | reader has a package and this one differs | fill the pending slot, play `PACKAGE_QUEUED` (rate-limited) |
-| a poll answers | identical to the current package | ignored |
+| a poll answers | identical to the current package | ignored — no sound, no state change |
 | link fault | any state | play `LINK_FAULT` (rate-limited); if `AWAITING_POLL`, fall back to `RESTING` (or `NO_DATA` with nothing held) rather than resuming whatever was showing before |
 | tick | `LABEL`, dwell elapsed, more glyphs left | render the next glyph, re-arm the dwell |
 | tick | `LABEL`, dwell elapsed, last glyph | render the value, enter `RESTING` |
