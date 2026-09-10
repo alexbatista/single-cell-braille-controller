@@ -254,11 +254,15 @@ SPI uses ioLibrary's burst callbacks over `HAL_SPI_TransmitReceive` rather than
 byte-at-a-time callbacks. SPI is touched only from the tick, never from an ISR,
 so `wizchip_cris_enter`/`wizchip_cris_exit` are no-ops.
 
-**`ETH_INT` (PB5) is an optimisation only.** Its EXTI sets a flag that makes
-`plc_link_tick()` service the socket immediately instead of waiting for the next
-poll instant; the W5500 `SIMR`/`Sn_IMR` are masked to socket 0 RECV and DISCON,
-and `Sn_IR` is cleared after servicing. The poll-interval path is correct on its
-own, so the feature degrades cleanly if the pin never fires.
+**`ETH_INT` (PB5) is wired and owned, but nothing acts on it.** This is a
+decision, not an omission. `plc_link_tick()` runs on every pass of the main
+loop, so the socket is already serviced as promptly as an interrupt could ask
+for — there is no wait for the pin to short-circuit. The W5500's `SIMR`/`Sn_IMR`
+are left masked accordingly, so the line never asserts. `plc_link_on_exti()`
+exists so PB5 has a declared owner in the shared `EXTI9_5` handler, and so an
+interrupt-driven or low-power revision has somewhere to start. A flag that gated
+nothing behind a comment claiming it was an optimisation would be worse than
+not having one; if this changes, change this section too.
 
 `modbus_tcp.c` validates and rejects: frames shorter than a legal response, a
 non-zero protocol ID, a **stale transaction ID** (the TID increments per request
