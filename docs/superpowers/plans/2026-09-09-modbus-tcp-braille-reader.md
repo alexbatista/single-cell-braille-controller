@@ -25,6 +25,7 @@
 - **C11**, `-Wall`, `-ffunction-sections -fdata-sections -Wl,--gc-sections` already enabled.
 - **Doxygen comment style** matches the existing App headers: `@file`/`@brief`/`@param`/`@return`, `@defgroup` + `/** @} */` per module. Grouping blocks must balance — an unbalanced `@name`/`@{` has broken the Doxygen build here before.
 - **Record `arm-none-eabi-size` output in every firmware commit message** so a flash regression is attributable to one task.
+- **Never commit a verification claim for a step you did not run.** Tasks 7, 8, 9 and 11 end in bench checks that need the board, and their commit-message templates contain a hardware-verified sentence in angle brackets with both wordings. Pick the one that is true. A commit asserting a check nobody performed is worse than no commit message at all, because it silently retires the check from anyone's todo list.
 - **Commit after every task.** End each commit message with:
   ```
   Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
@@ -3204,8 +3205,11 @@ _WIZCHIP_ and _WIZCHIP_IO_MODE_ are set PUBLIC on the target: a consumer that
 included wizchip_conf.h with a different chip selected would compute different
 register offsets and fail in a way that looks like a wiring problem.
 
-Verified on hardware by reading VERSIONR as 0x04, which exercises chip select,
-clock polarity, bit order and wiring together.
+<Hardware claim -- choose one, do not leave both. If Step 7's bench check was
+performed: "Verified on hardware by reading VERSIONR as 0x04, which exercises
+chip select, clock polarity, bit order and wiring together." If it was skipped:
+"Not yet verified on hardware -- the SPI path rests on the vendored headers
+alone, and reading VERSIONR is the first thing to check on a board.">
 
 Release text: <record arm-none-eabi-size output here>.
 
@@ -3926,11 +3930,14 @@ because PB5 and the three buttons share EXTI9_5_IRQn.
 The USB typed-character path is preserved verbatim under
 BRAILLE_INPUT_USB_CDC, including its LED toggle and echo.
 
-Verified end to end against the PLC: boot, the full eleven-field walk with
-values cross-checked in ScanBus, prev/repeat/boundary behaviour, an
-out-of-cycle request at the end of a package, the queued-package chirp and
-automatic jump to newer data, recovery from an unplugged cable and from a
-missing W5500, and press coalescing during a move.
+<Hardware claim -- choose one, do not leave both. If Step 5's twelve-item
+verification was performed: "Verified end to end against the PLC: boot, the
+full eleven-field walk with values cross-checked in ScanBus,
+prev/repeat/boundary behaviour, an out-of-cycle request at the end of a
+package, the queued-package chirp and automatic jump to newer data, recovery
+from an unplugged cable and from a missing W5500, and press coalescing during a
+move." If it was skipped: "Built and linked but not exercised on hardware; the
+twelve-item verification in the plan's Task 11 Step 5 is outstanding.">
 
 Release text: <record arm-none-eabi-size output here>.
 
