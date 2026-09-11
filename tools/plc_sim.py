@@ -9,30 +9,36 @@ its CONNECTING state and there is nothing to read.
 This is that something. Standard library only, so it runs on a bench machine
 with nothing installed.
 
+There are exactly two commands in the normal flow. Run them in this order:
+
+    python3 tools/verify_plc_sim.py        # 1. is this simulator correct?
+    sudo python3 tools/plc_sim.py --toggle 7   # 2. stand in for the PLC
+
+The first needs no privileges, no network and nothing installed: it starts this
+script on a loopback port by itself, drives it with frames built exactly as
+App/Src/modbus_tcp.c builds them, and checks the replies in the same order
+modbus_parse_read_coils() checks them. Run it before believing anything this
+simulator says about the device. The firmware's parser is strict -- it rejects a
+mismatched transaction id, an MBAP length that disagrees with the bytes that
+arrived, the wrong unit id, and a byte count inconsistent with the quantity --
+so a bug in here reaches the bench wearing the firmware's clothes.
+
+The second needs 10.0.0.204 assigned to the wired interface first:
+
+    sudo ip addr add 10.0.0.204/24 dev eno1    # substitute your interface
+
+Port 503 is privileged, hence sudo. It is 503 and not the MODBUS default of 502
+because that is what this installation's PLC uses.
+
+--bind and --port exist for the self-test and for benches that cannot use the
+real addressing. **You do not type either one in the normal flow** -- the
+defaults already match what the firmware is configured to look for, and
+verify_plc_sim.py passes its own when it needs them.
+
 The frame layout mirrors docs/09-modbus-tcp-and-plc-link.md and the firmware's
-own codec in App/Src/modbus_tcp.c. The firmware's parser is deliberately
-strict -- it rejects a mismatched transaction id, an MBAP length that disagrees
-with the bytes that arrived, the wrong unit id, and a byte count inconsistent
-with the quantity. That strictness is a feature, but it does mean a bug in this
-simulator looks exactly like a bug in the firmware. Validate this script
-against a known-good client before trusting it to judge the device:
-
-    # terminal 1 -- unprivileged port, no special addressing
-    python3 tools/plc_sim.py --bind 127.0.0.1 --port 5020
-
-    # terminal 2 -- the reference client that already works
-    python3 - <<'EOF'
-    from pyModbusTCP.client import ModbusClient
-    c = ModbusClient(host="127.0.0.1", port=5020, auto_open=True)
-    print(c.read_coils(0, 11))
-    EOF
-
-Typical bench use, once 10.0.0.204 is assigned to the wired interface:
-
-    sudo python3 tools/plc_sim.py --toggle 7
-
-Port 503 is privileged, hence sudo. The port is 503 and not the MODBUS default
-of 502 because that is what this installation's PLC uses.
+codec in App/Src/modbus_tcp.c. The full bench procedure, including how to tell
+whether the board is on the network at all before any of this matters, is
+docs/11-hardware-bring-up.md steps 1.5 and 1.6.
 """
 
 import argparse
