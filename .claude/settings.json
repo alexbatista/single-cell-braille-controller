@@ -21,7 +21,15 @@
       "Bash(git --no-pager diff --cached -- single-cell-braille-controller.ioc)",
       "Bash(git --no-pager log -4 --format='%s%n%b%n=====')",
       "Bash(echo \"=== CDC_ReadChar ===\" && grep -rn \"CDC_ReadChar\" --include=*.c --include=*.h . | grep -v build && echo && sed -n '/CDC_ReadChar/,/^}/p' USB_DEVICE/App/usbd_cdc_if.c | head -40 && echo \"=== CDC buffer sizes ===\" && grep -rn \"APP_RX_DATA_SIZE\\\\|APP_TX_DATA_SIZE\\\\|RxBuffer\\\\|ring\" USB_DEVICE/App/usbd_cdc_if.h USB_DEVICE/App/usbd_cdc_if.c | head -20)",
-      "Bash(awk '/CDC_ReadChar/,/^}/' USB_DEVICE/App/usbd_cdc_if.c)"
+      "Bash(awk '/CDC_ReadChar/,/^}/' USB_DEVICE/App/usbd_cdc_if.c)",
+      "Bash(ip -br link)",
+      "Bash(ip -br addr)",
+      "Bash(ip route *)",
+      "Bash(python3 -m py_compile tools/plc_sim.py)",
+      "Bash(python3 tools/verify_plc_sim.py)",
+      "Bash(doxygen Doxyfile)",
+      "Bash(make -C tests)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "/home/alexbatista/CWorkspace/single-cell-braille-controller/USB_DEVICE/App"
