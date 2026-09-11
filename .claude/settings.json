@@ -19,7 +19,12 @@
       "Bash(git --no-pager diff --cached -- App/Src/app_main.c Core/Src/main.c Core/Src/stm32f1xx_it.c Core/Inc/stm32f1xx_it.h Core/Src/tim.c docs/README.md Core/Inc/stm32f1xx_hal_conf.h cmake/stm32cubemx/CMakeLists.txt .claude/settings.json)",
       "Bash(git check-ignore *)",
       "Bash(git --no-pager diff --cached -- single-cell-braille-controller.ioc)",
-      "Bash(git --no-pager log -4 --format='%s%n%b%n=====')"
+      "Bash(git --no-pager log -4 --format='%s%n%b%n=====')",
+      "Bash(echo \"=== CDC_ReadChar ===\" && grep -rn \"CDC_ReadChar\" --include=*.c --include=*.h . | grep -v build && echo && sed -n '/CDC_ReadChar/,/^}/p' USB_DEVICE/App/usbd_cdc_if.c | head -40 && echo \"=== CDC buffer sizes ===\" && grep -rn \"APP_RX_DATA_SIZE\\\\|APP_TX_DATA_SIZE\\\\|RxBuffer\\\\|ring\" USB_DEVICE/App/usbd_cdc_if.h USB_DEVICE/App/usbd_cdc_if.c | head -20)",
+      "Bash(awk '/CDC_ReadChar/,/^}/' USB_DEVICE/App/usbd_cdc_if.c)"
+    ],
+    "additionalDirectories": [
+      "/home/alexbatista/CWorkspace/single-cell-braille-controller/USB_DEVICE/App"
     ]
   }
 }
