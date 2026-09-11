@@ -176,7 +176,7 @@ made a sound.
   python3 tools/verify_plc_sim.py            # 1. is the simulator itself correct?
 
   sudo ip addr add 10.0.0.204/24 dev "$IF"   # 2. become the PLC
-  sudo python3 tools/plc_sim.py --toggle 7
+  sudo python3 tools/plc_sim.py --toggle
   ```
 
   The first needs no privileges, no network and no board: it starts the
@@ -190,12 +190,21 @@ made a sound.
   firmware's parser rejects a malformed reply rather than accepting it quietly,
   so a bug in the simulator arrives at the bench wearing the firmware's clothes.
 
-  Port 503 is privileged, hence `sudo` on the second command. With `--toggle` the
-  simulator flips one coil in rotation, which is what exercises the
-  queued-package chirp and the automatic jump to newer data when NEXT is pressed
-  past the last field. `--coils` sets an explicit starting package, and every
-  poll is logged with the field labels so what went out on the wire can be
-  compared against what the cell renders.
+  Port 503 is privileged, hence `sudo` on the second command. With `--toggle`
+  the simulator flips one coil in rotation once a minute, which is what
+  exercises the queued-package chirp and the automatic jump to newer data when
+  NEXT is pressed past the last field.
+
+  A minute is chosen against the reader rather than picked arbitrarily. Walking
+  the whole package takes roughly 45 s at the default `PLC_LABEL_DWELL_MS`, so
+  one change per minute lands about one new package per complete read — enough
+  to exercise the pending slot without a reader who never reaches the end of a
+  stable package. `--toggle 5` provokes it far faster when that is the thing
+  being tested, at the cost of no longer resembling a production line.
+
+  `--coils` sets an explicit starting package, and every poll is logged with a
+  timestamp and the field labels, so what went out on the wire can be compared
+  against what the cell renders and against how far apart the events were.
 
   Success looks like this, on both sides at once: the simulator logs a
   connection from `10.0.0.50` and then a poll every 500 ms, and the board plays

@@ -12,7 +12,7 @@ with nothing installed.
 There are exactly two commands in the normal flow. Run them in this order:
 
     python3 tools/verify_plc_sim.py        # 1. is this simulator correct?
-    sudo python3 tools/plc_sim.py --toggle 7   # 2. stand in for the PLC
+    sudo python3 tools/plc_sim.py --toggle     # 2. stand in for the PLC
 
 The first needs no privileges, no network and nothing installed: it starts this
 script on a loopback port by itself, drives it with frames built exactly as
@@ -83,6 +83,18 @@ FIELD_LABELS = (
 DEFAULT_BIND = "10.0.0.204"
 DEFAULT_PORT = 503
 DEFAULT_UNIT_ID = 1
+
+# How often --toggle changes a coil when no period is given.
+#
+# One minute is chosen against the reader, not arbitrarily. Walking the whole
+# package takes roughly 45 s at the firmware's default PLC_LABEL_DWELL_MS of
+# 1500 ms (11 fields, 15 label glyphs plus 11 values, each held for a dwell and
+# preceded by a disc move). Changing a coil every minute therefore lands about
+# one new package per complete read: enough to exercise the queued-package
+# chirp and the automatic jump to newer data, without a reader never reaching
+# the end of a stable package. Shorter periods are useful for provoking the
+# pending slot quickly; they are not representative of a production line.
+DEFAULT_TOGGLE_SECONDS = 60.0
 
 
 _T0 = time.monotonic()
@@ -253,9 +265,14 @@ def main():
     parser.add_argument("--coils", default=None,
                         help="initial states as 0/1, leftmost is coil 0, "
                              "e.g. 00001000000")
-    parser.add_argument("--toggle", type=float, metavar="SECONDS", default=None,
+    parser.add_argument("--toggle", type=float, metavar="SECONDS",
+                        nargs="?", const=DEFAULT_TOGGLE_SECONDS, default=None,
                         help="flip one coil in rotation this often, to "
-                             "exercise the queued-package chirp")
+                             "exercise the queued-package chirp. Bare --toggle "
+                             "means every %.0fs, about one change per full "
+                             "read of the package; omit it entirely and the "
+                             "coils never change."
+                             % DEFAULT_TOGGLE_SECONDS)
     parser.add_argument("--quiet", action="store_true",
                         help="log only connections and toggles, not every poll")
     args = parser.parse_args()
@@ -278,15 +295,19 @@ def main():
     listener.listen(1)
 
     print("PLC simulator on %s:%d, unit %d, %d coils"
-          % (args.bind, args.port, args.unit, args.count))
-    print("initial: %s" % describe(coils.snapshot()))
+          % (args.bind, args.port, args.unit, args.count), flush=True)
+    print("initial: %s" % describe(coils.snapshot()), flush=True)
 
     stop = threading.Event()
     if args.toggle:
         threading.Thread(target=toggler, args=(coils, args.toggle, stop),
                          daemon=True).start()
-        print("toggling one coil every %.1fs" % args.toggle)
-    print("waiting for the device to connect (Ctrl-C to stop)")
+        if args.toggle >= 60.0:
+            print("toggling one coil every %.1fs (%.1f min)"
+                  % (args.toggle, args.toggle / 60.0), flush=True)
+        else:
+            print("toggling one coil every %.1fs" % args.toggle, flush=True)
+    print("waiting for the device to connect (Ctrl-C to stop)", flush=True)
 
     try:
         while True:
@@ -301,7 +322,7 @@ def main():
             finally:
                 conn.close()
     except KeyboardInterrupt:
-        print("\nstopping")
+        print("\nstopping", flush=True)
     finally:
         stop.set()
         listener.close()
