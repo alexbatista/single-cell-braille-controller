@@ -225,15 +225,23 @@ made a sound.
 
 - [ ] **3. Buttons.** Press `BTN_NEXT`, `BTN_PREV` and `BTN_REPEAT`
   individually and confirm: exactly one event per press, always the correct
-  button, no double-trigger from contact bounce within the
-  `PLC_BUTTON_DEBOUNCE_LOCKOUT_MS` (40&nbsp;ms,
-  [plc_config.h:101](../App/Inc/plc_config.h#L101)) window, and a press held
-  down fires once rather than repeating. `buttons.c`'s debounce is
-  first-edge-wins with a lockout, not a timer that waits for the signal to
-  settle before accepting anything
-  ([buttons.c:1-12](../App/Src/buttons.c#L1-L12)) — this step is what
-  confirms that design choice actually holds on the real switches, not just
-  in the state diagram of [10-reader-ui-and-buzzer.md §10.3](10-reader-ui-and-buzzer.md#103-the-four-states-and-the-full-event-table).
+  button, and a press held down fires once rather than repeating.
+
+  These switches have no debounce capacitor, so all of it is in software.
+  `buttons.c` registers the press on the first falling edge — zero perceived
+  latency for a control worked by feel — and then refuses to register again
+  until the pin reads released and has been quiet for
+  `PLC_BUTTON_RELEASE_STABLE_MS` ([plc_config.h](../App/Inc/plc_config.h)).
+
+  **Test the release, not just the press.** A contact bounces when it opens as
+  much as when it closes, and the EXTI fires on the falling edge only, so
+  letting go produces further falling edges. The first version of this debounce
+  measured its window from the accepted press, which covers press bounce and
+  has always expired by the time the operator lets go — a single press read as
+  two, intermittently, depending on how the contact happened to break. Hold a
+  button for a full second before releasing: if a lone press ever produces two
+  events, that is where to look. Raising the window is not the fix, since how
+  long the button is held is the operator's choice and not the firmware's.
 
 - [ ] **4. End to end**, against a running PLC (or simulator) serving the
   same 11-coil package this firmware expects:

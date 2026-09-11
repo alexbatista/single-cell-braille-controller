@@ -97,8 +97,18 @@
 #define PLC_FAULT_SOUND_MIN_INTERVAL_MS 10000u
 /** @} */
 
-/** @brief Debounce lockout: edges within this window are one press. */
-#define PLC_BUTTON_DEBOUNCE_LOCKOUT_MS 40u
+/**
+ * @brief How long a button must read released before it can press again.
+ *
+ * Measured from the last edge seen, not from the accepted press. The buttons
+ * interrupt on the falling edge only, and a mechanical contact bounces when it
+ * opens as well as when it closes -- so releasing produces further falling
+ * edges, arriving however long after the press the operator chose to hold it.
+ * A window measured from the press cannot cover that, because the hold time is
+ * not the firmware's to pick. Requiring a quiet, released pin instead makes the
+ * release itself the thing that re-arms the button.
+ */
+#define PLC_BUTTON_RELEASE_STABLE_MS 40u
 
 /** @} */ // end of plc_config
 
