@@ -27,6 +27,7 @@ Files to keep open while reading:
 | Why reject a response that decodes cleanly? | Because "decodes cleanly" and "answers the request we just sent" are different questions, and only the second one makes the values trustworthy. See 9.3. |
 | What does `ETH_INT` (PB5) do? | Nothing, on purpose. See 9.6. |
 | Has any of this run against a real W5500 or PLC? | No. See 9.8. |
+| Can a busy main-loop pass make a poll or timeout run late? | Yes — roughly 1.5&nbsp;s of blocking in one pass is reachable. The constants stay correct anyway. See 9.10. |
 
 ---
 
@@ -348,6 +349,72 @@ actually listening on port 503, not the MODBUS default of 502; and a link
 that connects but keeps reporting `LINK_FAULT` on the reader without ever
 settling means responses are arriving but failing validation (9.3) — worth
 capturing a frame on the wire and checking it against 9.2's byte tables.
+
+## 9.10 The timing constants are floors, not guarantees
+
+`PLC_POLL_INTERVAL_MS` (500&nbsp;ms,
+[plc_config.h:82](../App/Inc/plc_config.h#L82)) and
+`PLC_RESPONSE_TIMEOUT_MS` (1000&nbsp;ms,
+[plc_config.h:83](../App/Inc/plc_config.h#L83)) read like a cadence the link
+keeps to, but `plc_link_tick()` only runs as often as `App_run()` reaches it,
+and `App_run()` is one cooperative pass with no preemption
+([app_main.c:97-109](../App/Src/app_main.c#L97-L109)). Three calls reachable
+from that pass block for real time before returning, and none of them run
+inside `plc_link_tick()` itself:
+
+- **A disc move.** `braille_render_char()`/`braille_render_dots()`
+  ([braille_disc.c:245-259](../App/Src/braille_disc.c#L245-L259)) call
+  `move_to_angle()`
+  ([motion_planner.c:196-204](../App/Src/motion_planner.c#L196-L204)), which
+  busy-waits until both discs stop turning — about a second, the same figure
+  the module header already budgets for
+  ([app_main.c:12-14](../App/Src/app_main.c#L12-L14); see also
+  [10-reader-ui-and-buzzer.md §10.5](10-reader-ui-and-buzzer.md#105-why-the-buzzer-blocks-and-the-five-patterns)).
+- **The fault tone.** `buzzer_play()`
+  ([buzzer.c:153-163](../App/Src/buzzer.c#L153-L163)) calls `HAL_Delay()` per
+  step; the `LINK_FAULT` pattern is the longest of the five, at
+  480&nbsp;ms (10.5).
+- **The W5500 hard reset.** `chip_bring_up()`
+  ([plc_link.c:95-126](../App/Src/plc_link.c#L95-L126)) calls
+  `w5500_stm32_hard_reset()` at
+  [plc_link.c:103](../App/Src/plc_link.c#L103), about 12&nbsp;ms
+  (`PLC_W5500_RESET_LOW_MS` + `PLC_W5500_BOOT_MS`, 9.9). This one only runs on
+  the first bring-up and on every `CHIP_FAULT` retry
+  ([plc_link.c:245-253](../App/Src/plc_link.c#L245-L253)), not on every pass.
+
+These can share a single `App_run()` pass. Buttons are serviced first
+([app_main.c:97-101](../App/Src/app_main.c#L97-L101)), so a press that lands
+on a render can already have cost close to a second before
+`plc_link_tick()` even runs; if that same tick calls `report_fault()` on a
+fault path ([plc_link.c:77-81](../App/Src/plc_link.c#L77-L81)) and
+`reader_ui_on_link_fault()` plays the tone in response
+([reader_ui.c:208-219](../App/Src/reader_ui.c#L208-L219)), the pass has
+blocked for roughly 1.5&nbsp;s before `reader_ui_tick()` even runs — against
+a 500&nbsp;ms poll interval and a 1000&nbsp;ms response deadline that assume
+nothing else is happening. The two constants are therefore a floor on how
+soon the next poll or timeout check *can* run, not a promise of when it
+*will*.
+
+Two properties of the surrounding code are what make that a non-issue rather
+than a latent bug:
+
+- Every deadline in `plc_link.c` and `reader_ui.c` is an unsigned
+  `HAL_GetTick()` difference —
+  [elapsed_since()](../App/Src/plc_link.c#L72-L75) and
+  [elapsed()](../App/Src/reader_ui.c#L60-L64) both compute
+  `(uint32_t)(now - since) >= interval`. A pass that runs long does not skip
+  a deadline: the next tick simply sees an elapsed time already past the
+  interval and acts on it immediately, wrap-around included.
+- `read_response()` is called before the `AWAITING_RESPONSE` timeout is even
+  checked ([plc_link.c:315-317](../App/Src/plc_link.c#L315-L317)): a reply
+  that arrived while the pass was blocked elsewhere gets parsed and accepted
+  right there, and the timeout check below it never runs. A late pass can
+  delay when a response is read, but it can never turn an already-arrived,
+  valid response into a spurious timeout.
+
+So a 1.5&nbsp;s pass costs latency, not correctness: every deadline still
+fires, just later than the raw constants suggest, and the reader eventually
+sees either the data or a fault, never a wrong answer.
 
 ---
 

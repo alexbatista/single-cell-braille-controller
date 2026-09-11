@@ -92,6 +92,18 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 # ---------------------------------------------------------------------------
 set(BRAILLE_INPUT "MODBUS" CACHE STRING "Braille input source")
 set_property(CACHE BRAILLE_INPUT PROPERTY STRINGS MODBUS USB_CDC)
+
+# set_property(STRINGS ...) above only populates a dropdown in ccmake/
+# cmake-gui; it validates nothing on the command line, and STREQUAL below is
+# case-sensitive. Reject anything else here, before the message() that
+# echoes the value, so a typo like -DBRAILLE_INPUT=usb can never be echoed
+# back as if it had been accepted and then silently build the MODBUS
+# variant instead.
+if(NOT BRAILLE_INPUT STREQUAL "MODBUS" AND NOT BRAILLE_INPUT STREQUAL "USB_CDC")
+    message(FATAL_ERROR
+        "BRAILLE_INPUT must be MODBUS or USB_CDC (case-sensitive), got: ${BRAILLE_INPUT}")
+endif()
+
 message("Braille input source: " ${BRAILLE_INPUT})
 
 if(BRAILLE_INPUT STREQUAL "USB_CDC")
