@@ -8,6 +8,15 @@
  * single flag rather than a count, which is what makes an impatient reader's
  * repeated taps during a disc move collapse into one advance instead of
  * skipping fields.
+ *
+ * There is no hardware debounce on these switches, and the EXTI fires on the
+ * falling edge only. A press registers on the first edge and the button will
+ * not register again until its pin has been seen released and quiet for
+ * @ref PLC_BUTTON_RELEASE_STABLE_MS -- because a contact bounces when it opens
+ * as much as when it closes, and the release comes however long after the
+ * press the operator chose to hold. Re-arming therefore happens inside
+ * @ref buttons_take_event, which runs in the main loop and can observe the pin
+ * at rest; an edge alone cannot report that.
  */
 
 #ifndef BUTTONS_H
