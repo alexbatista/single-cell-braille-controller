@@ -89,9 +89,6 @@ static const uint8_t braille_pattern[256] = {
  *
  * The single seam where the character encoding lives: lowercase (ASCII and
  * Latin-1 accented) is folded to uppercase, then looked up.
- *
- * @param c Character code in 0..255, i.e. a Unicode codepoint U+0000..U+00FF.
- * @return 6-dot bitmask (DOTx flags); 0 for any unmapped code (blank cell).
  */
 uint8_t braille_pattern_for_char(uint8_t c) {
   if (c >= 'a' && c <= 'z') {
