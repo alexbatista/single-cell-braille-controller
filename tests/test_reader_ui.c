@@ -177,27 +177,67 @@ int main(void) {
   reader_ui_on_event(READER_EV_REPEAT);
   CHECK_STR_EQ(log_buf, ".");
 
-  /* -- a differing background snapshot queues and chirps -- */
+  /* -- a differing background snapshot queues and chirps once -- */
   start(0x0000u);
   walk_to(0u);
   log_reset();
   reader_ui_on_snapshot(snap(0x0001u));
   CHECK_STR_EQ(log_buf, "*");
-  /* an identical one is silent */
-  log_reset();
-  reader_ui_on_snapshot(snap(0x0000u));
-  CHECK_STR_EQ(log_buf, "");
 
-  /* -- the chirp is rate limited -- */
+  /* The announcement is an edge, not a level. "Newer data is waiting" is one
+   * bit the reader learns once; repeating it competes with the reading for the
+   * only channel they have. So while the slot stays full, further differing
+   * polls fill it silently -- and crucially that holds even once the rate
+   * limiter's interval has passed, which is what distinguishes this from
+   * merely being throttled. */
+  reader_ui_on_snapshot(snap(0x0002u));
+  CHECK_STR_EQ(log_buf, "*");
+  jump(PLC_QUEUED_SOUND_MIN_INTERVAL_MS * 2u);
+  reader_ui_on_snapshot(snap(0x0004u));
+  CHECK_STR_EQ(log_buf, "*");
+
+  /* Adopting empties the slot, which re-arms the edge. */
+  walk_to(LAST_INDEX - 1u); /* lands on the last field, without stepping past */
+  log_reset();
+  reader_ui_on_event(READER_EV_NEXT); /* adopts the pending package */
+  CHECK_STR_EQ(log_buf, "!A");
+  log_reset();
+  reader_ui_on_snapshot(snap(0x0020u));
+  CHECK_STR_EQ(log_buf, "*");
+
+  /* -- a poll that matches what the reader holds clears the pending slot -- */
+  /* Without this the slot keeps the intermediate value: the line moved away
+   * and came back, and stepping past the last field would adopt a package the
+   * line no longer shows, confirmed by a tone, with nothing to reveal it. */
+  start(0x0000u);
+  walk_to(0u);
+  log_reset();
+  reader_ui_on_snapshot(snap(0x0001u)); /* line moves away */
+  CHECK_STR_EQ(log_buf, "*");
+  reader_ui_on_snapshot(snap(0x0000u)); /* and comes back: silent */
+  CHECK_STR_EQ(log_buf, "*");
+  walk_to(LAST_INDEX - 1u); /* lands on the last field, without stepping past */
+  log_reset();
+  reader_ui_on_event(READER_EV_NEXT);
+  /* Nothing newer is genuinely waiting, so this must ask the PLC rather than
+   * adopt the stale intermediate value. */
+  CHECK_STR_EQ(log_buf, "@?");
+
+  /* -- the rate limiter still guards the re-armed edge -- */
+  /* Clearing on equality gives a flapping line a way to re-arm at the poll
+   * rate, so the limiter earns its keep as a backstop even though it is no
+   * longer the primary mechanism. */
   start(0x0000u);
   walk_to(0u);
   log_reset();
   reader_ui_on_snapshot(snap(0x0001u));
   CHECK_STR_EQ(log_buf, "*");
-  reader_ui_on_snapshot(snap(0x0002u)); /* too soon: queued, no chirp */
+  reader_ui_on_snapshot(snap(0x0000u)); /* back to current: slot cleared */
+  reader_ui_on_snapshot(snap(0x0001u)); /* diverges again, too soon to chirp */
   CHECK_STR_EQ(log_buf, "*");
   jump(PLC_QUEUED_SOUND_MIN_INTERVAL_MS);
-  reader_ui_on_snapshot(snap(0x0004u));
+  reader_ui_on_snapshot(snap(0x0000u));
+  reader_ui_on_snapshot(snap(0x0002u));
   CHECK_STR_EQ(log_buf, "**");
 
   /* -- NEXT past the last field adopts a pending package and clears it -- */

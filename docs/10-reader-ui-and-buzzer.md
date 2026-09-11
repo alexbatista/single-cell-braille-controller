@@ -159,8 +159,9 @@ they asked to go a second ago, not where they are now.
 | `REPEAT` | before reading has started | `BOUNDARY` blip |
 | a poll answers | reader was `AWAITING_POLL` | adopt it as the answer regardless of whether it differs from the old package |
 | a poll answers | reader had no package yet | adopt without rendering, play `DATA_RECEIVED`; `cursor = -1` so the cell stays blank until the first `NEXT` shows field 0 |
-| a poll answers | reader has a package and this one differs | fill the pending slot, play `PACKAGE_QUEUED` (rate-limited) |
-| a poll answers | identical to the current package | ignored — no sound, no state change |
+| a poll answers | differs, and nothing was pending | fill the pending slot, play `PACKAGE_QUEUED` (rate-limited) |
+| a poll answers | differs, and something was already pending | overwrite it, **silently** — see 10.4b |
+| a poll answers | identical to the current package | **clear the pending slot**, no sound |
 | link fault | any state | play `LINK_FAULT` (rate-limited); if `AWAITING_POLL`, fall back to `RESTING` (or `NO_DATA` with nothing held) rather than resuming whatever was showing before |
 | tick | `LABEL`, dwell elapsed, more glyphs left | render the next glyph, re-arm the dwell |
 | tick | `LABEL`, dwell elapsed, last glyph | render the value, enter `RESTING` |
@@ -180,6 +181,30 @@ request went out. Resuming it now would mean the sequence appears to move on
 its own — a glyph changing with no button press — rather than simply holding
 still until the reader presses something again
 ([reader_ui.c:212-218](../App/Src/reader_ui.c#L212-L218)).
+
+## 10.4b The announcement is an edge, not a level
+
+"Newer data is waiting" is one bit, and the reader learns it once. Announcing
+it per poll would mean announcing it twice a second for as long as the slot
+stayed full — and on a device whose reader is blind, that competes with the
+reading itself for the only channel there is. So `PACKAGE_QUEUED` plays when
+the slot goes from empty to full, and not again while it stays full. Newer
+values still replace older ones in the slot; they just do it quietly, because
+there is nothing further to learn from hearing about them.
+
+Adoption is what re-arms it, which is why the spacing follows the reader's own
+pace rather than a timer.
+
+A poll matching what the reader already holds **clears** the slot. That is not
+housekeeping: what the slot holds at that moment is the intermediate value the
+line has since left, and keeping it would let a later step past the last field
+adopt a package the line no longer shows — announced by the confirmation tone,
+with nothing to give it away as stale.
+
+Clearing on equality also means a flapping line can re-arm the edge at the
+polling rate, which is the job `PLC_QUEUED_SOUND_MIN_INTERVAL_MS` now does. It
+is no longer what spaces announcements out; it is a backstop against a
+chattering signal, which is the role the design always described for it.
 
 ## 10.4 One pending slot, not a queue
 

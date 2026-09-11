@@ -194,11 +194,32 @@ void reader_ui_on_snapshot(plc_snapshot_t snapshot) {
   }
 
   if (plc_snapshot_equal(snapshot, reader.current)) {
+    // The line came back to what the reader is already holding, so nothing
+    // newer is waiting any more. Dropping the slot matters: what it holds at
+    // this point is the intermediate value the line has since left, and
+    // keeping it would let a later step past the last field adopt a package
+    // the line no longer shows -- confirmed by a tone, with nothing to reveal
+    // it as stale.
+    reader.pending_valid = false;
     return;
   }
 
+  // Announce on the edge, not the level. "Newer data is waiting" is one bit
+  // the reader learns once; a poll every PLC_POLL_INTERVAL_MS would otherwise
+  // re-announce it for as long as the slot stays full, competing with the
+  // reading itself for the only channel the reader has. While the slot is
+  // already full the newer value still replaces the older one -- silently,
+  // because the reader has nothing new to learn from hearing it again.
+  bool was_empty = !reader.pending_valid;
   reader.pending = snapshot;
   reader.pending_valid = true;
+  if (!was_empty) {
+    return;
+  }
+
+  // The limiter is no longer what spaces the announcements out -- adoption is.
+  // It stays as a backstop, because clearing the slot on equality above gives
+  // a flapping line a way to re-arm this edge at the polling rate.
   if (rate_limit_allows(&reader.queued_sound,
                         PLC_QUEUED_SOUND_MIN_INTERVAL_MS)) {
     play(READER_SOUND_PACKAGE_QUEUED);
