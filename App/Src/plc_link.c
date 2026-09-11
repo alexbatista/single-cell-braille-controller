@@ -179,7 +179,14 @@ static void read_response(void) {
   }
 
   int32_t received = recv(PLC_SOCKET_NUMBER, link.frame, available);
-  if (received <= 0) {
+  if (received == 0) {
+    // SOCK_BUSY on a non-blocking socket: the call consumed nothing. The
+    // bytes are still queued and the connection is healthy, so retry on the
+    // next tick instead of tearing down a link that has done nothing wrong.
+    // The caller's response timeout bounds how long this can repeat.
+    return;
+  }
+  if (received < 0) {
     fail_to_backoff();
     return;
   }

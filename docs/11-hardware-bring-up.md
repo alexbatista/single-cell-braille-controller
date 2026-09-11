@@ -34,6 +34,24 @@ made a sound.
   MSB-first, and dropping the 12 Mbit/s prescaler to 6 Mbit/s if the jumper
   leads are long.
 
+  **Two faults found here in practice, both worth knowing before you start.**
+
+  *MOSI and MISO swapped.* This presents as `CHIP_FAULT` with the RJ45 link
+  LEDs lit and the board otherwise healthy — discs homing, buttons and buzzer
+  working. The lit LEDs are the trap: the W5500's PHY negotiates with the
+  switch as soon as the module has power, entirely without the MCU, so they
+  confirm power and cable and say nothing about SPI. `getVERSIONR()` never
+  returns `0x04`, the chip never receives an address, and the device is
+  completely invisible on the network — no ARP, no ICMP. Check the two data
+  lines against each other before reaching for a multimeter; the module is a
+  slave, so its MOSI goes to the MCU's MOSI (PB15) and its MISO to PB14.
+
+  *Everything working and the link still resetting.* If the SPI is proven but
+  the connection tears down once per poll, that is a different fault entirely
+  and it is documented in
+  [09 §9.9b](09-modbus-tcp-and-plc-link.md#99b-a-healthy-socket-that-refuses-to-read),
+  along with the SWD technique that found it.
+
 - [ ] **1.5. Read what the board is already telling you, before touching a PC.**
   This step needs no host, no cable to a laptop and no commands. Skipping it is
   how a bench session ends up debugging a network that was never the problem:
