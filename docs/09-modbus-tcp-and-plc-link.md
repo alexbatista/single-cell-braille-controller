@@ -350,6 +350,61 @@ that connects but keeps reporting `LINK_FAULT` on the reader without ever
 settling means responses are arriving but failing validation (9.3) — worth
 capturing a frame on the wire and checking it against 9.2's byte tables.
 
+## 9.9b A healthy socket that refuses to read
+
+This one cost an afternoon on the bench, and neither the symptom nor the cause
+is where you would look for it. Recording it because nothing in the firmware's
+own code contains the bug.
+
+The symptom: the device connects, sends a well-formed request, receives a
+well-formed reply — and then sends a TCP **RST** about 200&nbsp;ms later. Every
+cycle. The simulator logs `connected`, one request, one response, `RST`,
+repeating every few seconds as the link backs off and retries. Everything at
+the MODBUS layer is provably correct, which sends you looking at the network.
+
+The cause was in the vendored library. `recv()` in
+`Lib/w5500/ioLibrary/Ethernet/socket.c` tested the non-blocking flag *before*
+testing whether any data had arrived:
+
+```c
+if (sock_io_mode & (1 << sn)) return SOCK_BUSY;   /* upstream order */
+if (recvsize != 0) break;
+```
+
+`SOCK_BUSY` is `0`. The socket is opened with `SF_IO_NONBLOCK` so that
+`connect()` cannot stall the cooperative loop
+([plc_link.c:285](../App/Src/plc_link.c#L285)), which means `recv()` returned
+`0` unconditionally — with a complete frame already sitting in the RX buffer.
+`read_response()` treated a non-positive return as failure and called
+`fail_to_backoff()`, which closes the socket, and the W5500's `close()` is an
+abortive teardown rather than a FIN. Hence the RST, once per poll, on a
+connection that had done nothing wrong.
+
+The `IPV6_AVAILABLE` branch a few lines above already had the two tests the
+other way round. That is the evidence it is a defect rather than a contract,
+and the order it uses is what the local fix restores — recorded in
+[UPSTREAM.md](../Lib/w5500/UPSTREAM.md). `read_response()` now also treats a
+zero return as "consumed nothing, retry next tick" rather than as a reason to
+destroy the link.
+
+**The method is worth as much as the finding.** Reading the state out of the
+running device settled in minutes what inference had not settled in an hour:
+
+```bash
+# the address comes from the ELF, so it survives a rebuild moving things
+arm-none-eabi-nm build/Release/single-cell-braille-controller.elf | grep ' link$'
+STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -r32 0x20000384 0x04
+```
+
+`mode=HOTPLUG` attaches to the running target without resetting it, so the
+fault under investigation survives being looked at. `link.state`
+([plc_link.c](../App/Src/plc_link.c)) decodes straight to the state names in
+9.4, and temporarily appending diagnostic fields to that struct — the raw
+`Sn_SR`, which call site failed, what `recv()` returned — turns "it does not
+work" into three numbers. Here they read `SOCK_ESTABLISHED`, site "recv
+failed", and `0`: a healthy socket and a read that refused. That combination
+named the bug.
+
 ## 9.10 The timing constants are floors, not guarantees
 
 `PLC_POLL_INTERVAL_MS` (500&nbsp;ms,

@@ -85,6 +85,17 @@ DEFAULT_PORT = 503
 DEFAULT_UNIT_ID = 1
 
 
+_T0 = time.monotonic()
+
+
+def log(fmt, *args):
+    """Print with a wall clock and a delta, so event spacing is readable."""
+    now = time.monotonic()
+    print("[%s +%6.3fs] %s" % (time.strftime("%H:%M:%S"), now - _T0,
+                               (fmt % args) if args else fmt), flush=True)
+    globals()["_T0"] = now
+
+
 class CoilBank:
     """The coil states, shared between the server loop and the toggler."""
 
@@ -160,7 +171,7 @@ def serve_connection(conn, peer, coils, unit_id, verbose):
 
         requests += 1
         if verbose:
-            print("  <- %s%s" % (mbap.hex(), pdu.hex()))
+            log("  <- %s%s", mbap.hex(), pdu.hex())
 
         if protocol_id != PROTOCOL_ID:
             # Not MODBUS. Say nothing rather than guess -- a real server would
@@ -174,8 +185,8 @@ def serve_connection(conn, peer, coils, unit_id, verbose):
         if function_code != FC_READ_COILS:
             response = build_exception(transaction_id, unit_id, function_code,
                                        EXC_ILLEGAL_FUNCTION)
-            print("  !! FC 0x%02X unsupported, returning exception"
-                  % function_code)
+            log("  !! FC 0x%02X unsupported, returning exception",
+                function_code)
             conn.sendall(response)
             continue
 
@@ -183,8 +194,8 @@ def serve_connection(conn, peer, coils, unit_id, verbose):
         if quantity == 0 or start + quantity > len(coils):
             response = build_exception(transaction_id, unit_id, function_code,
                                        EXC_ILLEGAL_DATA_ADDRESS)
-            print("  !! coils %d..%d out of range, returning exception"
-                  % (start, start + quantity - 1))
+            log("  !! coils %d..%d out of range, returning exception",
+                start, start + quantity - 1)
             conn.sendall(response)
             continue
 
@@ -195,12 +206,12 @@ def serve_connection(conn, peer, coils, unit_id, verbose):
         conn.sendall(response)
 
         if verbose:
-            print("  -> %s   [%s]" % (response.hex(), describe(states)))
+            log("  -> %s   [%s]", response.hex(), describe(states))
         elif requests == 1:
-            print("  first poll answered: %s" % describe(states))
+            log("  first poll answered: %s", describe(states))
 
-    print("-- %s:%d disconnected after %d request(s)"
-          % (peer[0], peer[1], requests))
+    log("-- %s:%d disconnected cleanly after %d request(s)",
+        peer[0], peer[1], requests)
 
 
 def toggler(coils, period, stop):
@@ -210,9 +221,8 @@ def toggler(coils, period, stop):
         state = coils.flip(index)
         label = FIELD_LABELS[index][0] if index < len(FIELD_LABELS) else str(
             index)
-        print("** coil %d (%s) -> %s   [%s]"
-              % (index, label, "TRUE" if state else "FALSE",
-                 describe(coils.snapshot())))
+        log("** coil %d (%s) -> %s   [%s]", index, label,
+            "TRUE" if state else "FALSE", describe(coils.snapshot()))
         index = (index + 1) % len(coils)
 
 
@@ -281,12 +291,13 @@ def main():
     try:
         while True:
             conn, peer = listener.accept()
-            print("++ %s:%d connected" % (peer[0], peer[1]))
+            log("++ %s:%d connected", peer[0], peer[1])
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             try:
                 serve_connection(conn, peer, coils, args.unit, verbose)
             except ConnectionResetError:
-                print("-- %s:%d reset the connection" % (peer[0], peer[1]))
+                log("-- %s:%d SENT RST (abortive close, not a FIN)",
+                    peer[0], peer[1])
             finally:
                 conn.close()
     except KeyboardInterrupt:
