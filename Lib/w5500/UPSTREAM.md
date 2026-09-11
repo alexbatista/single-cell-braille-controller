@@ -21,32 +21,36 @@ to it.
 
 ## Local modifications
 
-**None.** The vendored files are byte-for-byte what was fetched.
+### `Ethernet/socket.c` -- `recv()` test ordering
 
-This upstream revision already guards both selection macros with
-`#ifndef` in `wizchip_conf.h`:
-
-```c
-#ifndef _WIZCHIP_
-#define _WIZCHIP_                      W6300   // default if nothing selects a chip
-...
-#endif
-```
-
-and, inside the `#elif (_WIZCHIP_ == W5500)` branch:
+One change, found on the bench. In `recv()`, the non-IPv6 branch tested the
+non-blocking flag *before* testing whether any data had arrived:
 
 ```c
-#ifndef _WIZCHIP_IO_MODE_
-#define _WIZCHIP_IO_MODE_           _WIZCHIP_IO_MODE_SPI_
-#endif
+if (sock_io_mode & (1 << sn)) return SOCK_BUSY;   /* upstream: first */
+if (recvsize != 0) break;
 ```
 
-Because both are already `#ifndef`-guarded, the `-D_WIZCHIP_=W5500` and
-`-D_WIZCHIP_IO_MODE_=_WIZCHIP_IO_MODE_SPI_VDM_` compile definitions in
-`Lib/w5500/CMakeLists.txt` take effect before the header's own `#define` is
-reached, so its default is skipped rather than colliding. The brief's
-fallback of wrapping the upstream `#define` by hand was not needed --
-verified by reading the fetched header before writing the CMake target.
+`SOCK_BUSY` is `0`, so on a socket opened with `SF_IO_NONBLOCK` this returns 0
+unconditionally -- even with a complete frame already sitting in the RX buffer.
+A caller that treats a non-positive return as an error then destroys a perfectly
+healthy connection on every read.
+
+That is what it did here: the device connected, polled, received a valid MODBUS
+reply, and sent an RST roughly 200 ms later, every cycle. Instrumenting the
+firmware and reading it back over SWD showed `Sn_SR` = `0x17`
+(`SOCK_ESTABLISHED`) with `recv()` returning `0` -- a healthy socket and a
+refusing read.
+
+The two tests are now in the other order, which is exactly what the
+`IPV6_AVAILABLE` branch a few lines above already does. That branch is the
+evidence this is a defect rather than a contract: upstream clearly intends
+"data first, non-blocking second".
+
+Only `recv()` is changed. `send()`, `connect()` and `recvfrom()` contain the
+same shape in places but are not affected by it in the way this project uses
+them, and are left untouched.
+
 
 ## API differences from the brief's assumptions
 

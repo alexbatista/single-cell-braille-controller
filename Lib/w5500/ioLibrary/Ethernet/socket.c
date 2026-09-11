@@ -684,11 +684,20 @@ int32_t recv(uint8_t sn, uint8_t * buf, uint16_t len) { //lihan
                 return SOCK_BUSY;
             }
 #else
-            if (sock_io_mode & (1 << sn)) {
-                return SOCK_BUSY;
-            }
+            /* LOCAL FIX -- see Lib/w5500/UPSTREAM.md.
+             * Upstream tests the non-blocking flag BEFORE testing whether any
+             * data arrived, so on a socket opened with SF_IO_NONBLOCK this
+             * returns SOCK_BUSY (which is 0) unconditionally -- even with a
+             * complete frame already in the RX buffer. A caller that treats a
+             * non-positive return as an error then tears down a healthy
+             * connection on every single read. The IPV6_AVAILABLE branch a few
+             * lines above already has these two tests the other way round,
+             * which is what the order below restores. */
             if (recvsize != 0) {
                 break;
+            }
+            if (sock_io_mode & (1 << sn)) {
+                return SOCK_BUSY;
             }
 #endif
         };
