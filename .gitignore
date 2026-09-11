@@ -4,3 +4,4 @@ mx.scratch
 !.settings
 single-cell-braille-controller-screenh.code-workspace
 single-cell-braille-controller-screenv.code-workspace
+__pycache__

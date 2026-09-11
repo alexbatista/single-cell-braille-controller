@@ -34,6 +34,88 @@ made a sound.
   MSB-first, and dropping the 12 Mbit/s prescaler to 6 Mbit/s if the jumper
   leads are long.
 
+- [ ] **1.5. Prove the device on the network, from a Linux host.** Once the
+  SPI link is good the chip has an address, and a host on the same segment can
+  confirm it independently of anything the board reports about itself. Two
+  things about this device make the obvious approach misleading, so read them
+  before running anything.
+
+  **Nothing listens.** The firmware is a MODBUS *client*: it opens one socket
+  and connects outward
+  ([plc_link.c:261-269](../App/Src/plc_link.c#L261-L269)); `listen()` appears
+  nowhere in the application. A port scan finds no open port, and that is the
+  correct result, not evidence of a dead board. ICMP is the only host-discovery
+  method this firmware supports — the W5500's ping-block bit `MR_PB`
+  ([w5500.h:720](../Lib/w5500/ioLibrary/Ethernet/W5500/w5500.h#L720)) is never
+  written by any code here, so the chip answers ping with its power-on default.
+
+  **The chip only gets an address if SPI works.** `wizchip_setnetinfo()` runs
+  only after `getVERSIONR()` returns `0x04` and `wizchip_init()` succeeds
+  ([plc_link.c:106-124](../App/Src/plc_link.c#L106-L124)). A W5500 that does not
+  answer over SPI leaves the device with no IP at all: no ARP, no ICMP, nothing
+  on the wire. That failure is step 1's, not this step's, and it announces
+  itself as blink code 3 ([fault_led.h:32](../App/Inc/fault_led.h#L32)).
+
+  The single most informative observation is an ARP request. With no PLC
+  present, the device cannot send its SYN — the W5500 has no destination MAC to
+  send it to — so it sits repeating `who-has 10.0.0.204`. Seeing that one line
+  proves the chip is alive over SPI, has its address configured, has PHY link,
+  and is running the connection state machine. It settles the question in a way
+  a ping does not.
+
+  ```bash
+  IF=eno1                                   # the wired interface facing the board
+  sudo ip addr add 10.0.0.9/24 dev "$IF"    # secondary address, non-destructive
+
+  sudo arp-scan --interface="$IF" --localnet | grep -i '00:08:dc'
+  # or, with nothing extra installed:
+  sudo arping -I "$IF" -c 3 10.0.0.50
+
+  ping -c 4 10.0.0.50
+  sudo tcpdump -i "$IF" -n -e host 10.0.0.50 or arp
+  ```
+
+  `00:08:DC` is WIZnet's OUI, which is what distinguishes this board from
+  anything else that might answer at that address. The device's own identity is
+  in [plc_config.h](../App/Inc/plc_config.h): MAC `00:08:DC:11:22:33`, IP
+  `10.0.0.50/24`, source port `50000`, and the PLC it seeks at `10.0.0.204:503`
+  — port 503, not the MODBUS default of 502.
+
+  | Symptom | Reading |
+  |---|---|
+  | Blink code 3, nothing on the wire | `VERSIONR` failed; the chip never got an address. Back to step 1. |
+  | No blink code 3, still no ARP from the board | PHY has no link. The firmware emits nothing at all while waiting for it. Check the module's link LEDs and the cable. |
+  | ARP from the board, but ping does not answer | Contradicts the code — `MR_PB` is never set. Capture it and report it. |
+  | `who-has 10.0.0.204` repeating | Everything works; only the PLC is missing. Go to the simulator below. |
+  | SYN to `10.0.0.204:503` unanswered | Whatever should be answering is not listening, or is on 502. |
+  | A port scan finds nothing open | Correct. Use ARP and ping. |
+
+  Clean up afterwards with `sudo ip addr del 10.0.0.9/24 dev "$IF"`.
+
+- [ ] **1.6. Stand in for the PLC.** [tools/plc_sim.py](../tools/plc_sim.py) is
+  a MODBUS TCP server that answers the device's polls, so the whole reader can
+  be exercised at a desk with no PLC in the room. It uses only the Python
+  standard library.
+
+  ```bash
+  sudo ip addr add 10.0.0.204/24 dev "$IF"
+  sudo python3 tools/plc_sim.py --toggle 7
+  ```
+
+  Port 503 is privileged, hence `sudo`. With `--toggle` it flips one coil in
+  rotation, which is what exercises the queued-package chirp and the automatic
+  jump to newer data when NEXT is pressed past the last field. `--coils` sets an
+  explicit starting package, and every poll is logged with the field labels so
+  what went out on the wire can be compared against what the cell renders.
+
+  The simulator is the thing judging the device, so judge it first:
+  `python3 tools/verify_plc_sim.py` drives it with frames built exactly as
+  [modbus_tcp.c](../App/Src/modbus_tcp.c) builds them and checks the replies in
+  the same order `modbus_parse_read_coils()` checks them. It needs no
+  privileges and nothing installed. This matters because the firmware's parser
+  rejects a malformed reply rather than accepting it quietly — so a bug in the
+  simulator arrives at the bench wearing the firmware's clothes.
+
 - [ ] **2. Buzzer.** Trigger all five patterns
   (`REQUEST_SENT`, `DATA_RECEIVED`, `PACKAGE_QUEUED`, `LINK_FAULT`,
   `BOUNDARY` — table in
