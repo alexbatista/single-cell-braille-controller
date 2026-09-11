@@ -97,5 +97,37 @@ made a sound.
 
 ---
 
+## Known backlog
+
+None of these blocks bring-up. They were raised during review, judged not worth
+fixing at the time, and are recorded here so the reasoning is not lost.
+
+**`plc_link`'s `poll_requested` is not cleared when the reader gives up first.**
+`reader_ui` runs its own `AWAITING_POLL` deadline, which is what rescues a reader
+when `plc_link` is still stuck in `LINK_WAIT`, `CONNECTING` or `CHIP_FAULT` and
+has not sent anything yet. If that deadline fires, `plc_link` still has the
+explicit request flagged, so the eventual reply arrives as an ordinary background
+snapshot — a queued-package chirp, or silence, where a data-received tone would
+have fitted better. No data is lost and nothing desyncs. Fixing it would mean one
+module reaching into the other's state on a path neither currently owns, for a
+symptom that only shows on an already-failing link.
+
+**`tests/test_braille_dots.c` never feeds `translate_char_on_disc()` a three- or
+four-byte UTF-8 sequence.** The documented rule that a codepoint above U+00FF
+renders blank is therefore covered by reading the code, not by an assertion. The
+decoder itself predates this work and was not modified.
+
+**`buzzer.c` documents one of its two preload assumptions.** The comment explains
+why a new auto-reload takes effect immediately (`ARPE` is disabled) but says
+nothing about the compare-preload assumption the same design rests on. Separately,
+a period of 1 would make `CCR == ARR` and stick the output; unreachable at the six
+frequencies in use, worth a guard only if the range is ever widened.
+
+**`docs/07-character-encoding.md` has line anchors one line early**, pointing at a
+closing `*/` rather than the code they describe. Pre-existing drift of the kind
+that has bitten this repo before.
+
+---
+
 **Previous:** [10-reader-ui-and-buzzer.md](10-reader-ui-and-buzzer.md) ·
 **Index:** [README.md](README.md)
