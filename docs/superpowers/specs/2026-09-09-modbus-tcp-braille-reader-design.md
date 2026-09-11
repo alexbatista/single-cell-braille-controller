@@ -196,8 +196,9 @@ glyph 0 of `plc_fields[cursor]` and arm the dwell timer. `LAST_FIELD` is
 | REPEAT | `cursor < 0` | `BOUNDARY` blip |
 | snapshot | any, while `AWAITING_POLL` | treated as the answer to the outstanding request: adopt, clear any pending slot, `cursor = 0`, `DATA_RECEIVED`, present → `LABEL` |
 | snapshot | `NO_DATA` | adopt, `cursor = -1`, `DATA_RECEIVED` → `RESTING`; cell stays blank, first NEXT shows field 0 |
-| snapshot | `RESTING` or `LABEL`, differs from current | fill pending slot, `PACKAGE_QUEUED` (rate-limited) |
-| snapshot | `RESTING` or `LABEL`, identical | ignored, silent |
+| snapshot | `RESTING` or `LABEL`, differs from current, slot **empty** | fill pending slot, `PACKAGE_QUEUED` (rate-limited) |
+| snapshot | `RESTING` or `LABEL`, differs from current, slot **already full** | overwrite the slot, **silent** — the announcement is an edge |
+| snapshot | `RESTING` or `LABEL`, identical to current | **clear the pending slot**, silent |
 | link fault | any | `LINK_FAULT` (rate-limited); `AWAITING_POLL` returns to `RESTING`, or `NO_DATA` when no package is held |
 | tick | `LABEL`, dwell expired | more label glyphs → render the next and re-arm; otherwise render the value → `RESTING` |
 | tick | `AWAITING_POLL`, timeout | take the link-fault path |
