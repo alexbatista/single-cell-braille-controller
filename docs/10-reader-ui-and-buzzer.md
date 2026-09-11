@@ -25,6 +25,9 @@ Files to keep open while reading:
 | Why can labels be 1 or 2 letters? | Because a value glyph (all-flat or all-raised) can never be mistaken for a letter still to come — see the invariant in 10.2, and why it is fragile. |
 | Why only one pending package, not a queue? | A full read takes tens of seconds; a queue would put the reader further behind the real machine with every field. See 10.4. |
 | Why does `buzzer_play()` block? | Because the alternative is a tone that keeps sounding through an unrelated disc move. See 10.5. |
+| How often is the PLC actually asked? | Every `PLC_POLL_INTERVAL_MS` — 500&nbsp;ms, twice a second — but that is a floor rather than a promise, since a disc move or a buzzer pattern delays the loop. See [09 §9.1](09-modbus-tcp-and-plc-link.md#91-the-device-is-a-client--and-what-that-means-for-unrequested-data) and [09 §9.10](09-modbus-tcp-and-plc-link.md#910-the-timing-constants-are-floors-not-guarantees). |
+| So when does the chirp actually play? | Only when a poll differs from the package you are holding, and only on the edge — the first one after the slot was empty. A poll that matches what you hold is silent, and so is every further differing poll while the slot stays full. See 10.4b. |
+| What does `NEXT` do at the last field when nothing new is waiting? | Asks the PLC out of cycle, then restarts from field 0 with the answer — even when the answer is identical to what you just read. See 10.3. |
 | Has any of this run on real hardware? | `reader_ui.c` is host-tested. The buzzer and the buttons have not run at all. See 10.7. |
 
 ---
@@ -152,7 +155,7 @@ they asked to go a second ago, not where they are now.
 | `NEXT` | no package held | request a poll, play `REQUEST_SENT`, enter `AWAITING_POLL` |
 | `NEXT` | mid-package | advance the cursor, present the next field |
 | `NEXT` | at the last field, pending package waiting | adopt the pending package (and clear the slot), present field 0 of the new package |
-| `NEXT` | at the last field, nothing pending | force an out-of-cycle poll (same as "no package held") |
+| `NEXT` | at the last field, nothing pending | force an out-of-cycle poll (same as "no package held"); the answer is then adopted **unconditionally** — cursor back to 0, `DATA_RECEIVED`, field 0 — even when it is identical to the package just read |
 | `PREV` | `cursor > 0` | step back, re-present from glyph 0 |
 | `PREV` | at field 0 or before reading started | `BOUNDARY` blip; discs do not move |
 | `REPEAT` | reading has started | re-present the current field from glyph 0 |
@@ -181,6 +184,22 @@ request went out. Resuming it now would mean the sequence appears to move on
 its own — a glyph changing with no button press — rather than simply holding
 still until the reader presses something again
 ([reader_ui.c:212-218](../App/Src/reader_ui.c#L212-L218)).
+
+### A poll you asked for is always adopted
+
+The row above is worth dwelling on, because a consequence falls out of it that
+is easy to meet by surprise. A poll arriving while the reader is `AWAITING_POLL`
+is adopted without being compared against anything: you asked, so you get the
+answer, and the cursor returns to field 0. If nothing on the line changed, that
+costs a full re-read of eleven fields to discover it.
+
+It also means that **at that moment the confirmation tone cannot tell you
+whether anything changed** — an identical answer and a genuinely new one sound
+the same. The signal that something changed is the chirp, which you would
+already have heard while reading. Giving the identical case its own sound was
+considered and deliberately not done: it is one more sound to learn, on a device
+where every sound competes with the reading. Worth revisiting with a real
+operator rather than from a desk.
 
 ## 10.4b The announcement is an edge, not a level
 
