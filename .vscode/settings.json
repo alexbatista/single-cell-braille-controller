@@ -11,6 +11,11 @@
   "cmake.cmakePath": "cube-cmake",
   "cmake.configureArgs": ["-DCMAKE_COMMAND=cube-cmake"],
   "cmake.preferredGenerators": ["Ninja"],
+  // Regenerate build/Debug/compile_commands.json on folder open. .clangd reads
+  // its compilation database from build/Debug, and that directory is
+  // gitignored, so without this a fresh clone has no database and clangd
+  // cannot resolve includes or cross-file navigation (F12).
+  "cmake.configureOnOpen": true,
   "stm32cube-ide-clangd.path": "cube",
   "stm32cube-ide-clangd.arguments": [
     "starm-clangd",
