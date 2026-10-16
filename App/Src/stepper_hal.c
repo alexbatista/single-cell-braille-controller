@@ -78,8 +78,9 @@ static void pulse_train_start(void *ctx, uint32_t pulse_hz) {
 
 static void pulse_train_stop(void *ctx) {
   Stepper_Hal_Stm32_t *port = ctx;
-  // Disabling the channel hands the pin back to the GPIO output register,
-  // which is 0 out of reset, so STEP idles low as the TMC2209 expects.
+  // Disabling the channel (CCxE = 0) turns the timer output off; the pin
+  // stays in alternate-function mode and a disabled TIM2/TIM3 output drives
+  // it low, so STEP idles low as the TMC2209 expects.
   HAL_TIM_PWM_Stop_IT(port->step_tim, port->step_channel);
 }
 
