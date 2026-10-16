@@ -144,7 +144,7 @@ flowchart LR
         Z2["Slot sensor<br/>ZERO 02"]
         BTN["Buttons<br/>PREV · NEXT · REPEAT"]
         BUZ["Piezo buzzer"]
-        PWR["12 V DC → AMS1117<br/>12 V + 3.3 V"]
+        PWR["12 V DC → power breakout<br/>12 V · 5 V · 3.3 V"]
     end
     CELL{{"Braille cell<br/>under the finger"}}
     USER(("Reader"))
@@ -178,15 +178,16 @@ flowchart LR
 | 2   | **TMC2209 breakout** (StepStick format)         | 3.00            | Configured over single-wire UART, moved over STEP/DIR              |
 | 2   | **NEMA17 stepper motor**                        | 7.50            | One per disc                                                       |
 | 2   | **LM393 IR slot sensor module** (VCC/GND/D0/A0) | 1.40            | Homing; only the digital D0 output is used                         |
-| 1   | **Passive piezo buzzer**                        | 0.13            | Must be passive: the firmware generates the tones with PWM         |
+| 1   | **Passive piezo buzzer**                        | 0.13            | Must be passive: the firmware generates the tones with PWM; driven through a BC368 (below) |
 | 3   | **Momentary push button**                       | 0.03            | PREV, NEXT, REPEAT                                                 |
-| 1   | **AMS1117-3.3 breakout with DC barrel jack**    | 2.00            | Splits the 12 V input into 12 V and 3.3 V rails                    |
+| 1   | **AMS1117 power breakout with DC barrel jack**  | 2.00            | Passes 12 V through and regulates 5 V and 3.3 V rails              |
 |     | **Total** (as reported in the paper)            | **≈ 32.70**     |                                                                    |
 
 Also needed, not counted in the total above:
 
-- two **1 kΩ resistors**, one per TMC2209, between the MCU's TX and the driver's
-  PDN_UART;
+- three **1 kΩ resistors**: one per TMC2209 between the MCU's TX and the
+  driver's PDN pin, and one in series with the buzzer transistor's base;
+- one **BC368 NPN transistor** that switches the buzzer from the 5 V rail;
 - a **12 V DC power supply** sized for both motors (≥ 2 A is a comfortable
   margin);
 - an **ST-Link V2** (or compatible) for flashing and debugging over SWD;
@@ -195,9 +196,10 @@ Also needed, not counted in the total above:
 ### Power
 
 ```
-12 V DC adapter ──► barrel jack on the AMS1117 breakout
+12 V DC adapter ──► barrel jack on the AMS1117 power breakout
                       ├── 12 V ──► VM of both TMC2209 (motor supply)
-                      └── 3.3 V ─► Blue Pill 3V3 pin, W5500, TMC2209 VIO,
+                      ├── 5 V ───► buzzer + (switched by the BC368)
+                      └── 3.3 V ─► Blue Pill 3V3 pin, W5500, TMC2209 VCC_IO,
                                    slot sensors
 GND is common to every board.
 ```
@@ -229,19 +231,19 @@ the printed label, not by position**. The full pin map:
 | PB15          | W5500 **MOSI**                           | SPI2 data, MCU → module                                 |
 | PA10          | W5500 **RST**                            | Reset, active low                                       |
 | PB5           | W5500 **INT**                            | Wired, but intentionally unused by the firmware         |
-| PA2           | TMC2209 #1 **PDN_UART** through **1 kΩ** | USART2 TX                                               |
-| PA3           | TMC2209 #1 **PDN_UART** (direct)         | USART2 RX                                               |
+| PA2           | TMC2209 #1 **PDN** through **1 kΩ**      | USART2 TX                                               |
+| PA3           | TMC2209 #1 **PDN** (direct)              | USART2 RX                                               |
 | PA1           | TMC2209 #1 **STEP**                      | TIM2_CH2 pulse train                                    |
 | PA4           | TMC2209 #1 **DIR**                       |                                                         |
 | PA5           | TMC2209 #1 **EN**                        | Active low                                              |
-| PB10          | TMC2209 #2 **PDN_UART** through **1 kΩ** | USART3 TX                                               |
-| PB11          | TMC2209 #2 **PDN_UART** (direct)         | USART3 RX                                               |
+| PB10          | TMC2209 #2 **PDN** through **1 kΩ**      | USART3 TX                                               |
+| PB11          | TMC2209 #2 **PDN** (direct)              | USART3 RX                                               |
 | PB1           | TMC2209 #2 **STEP**                      | TIM3_CH4 pulse train                                    |
 | PA7           | TMC2209 #2 **DIR**                       |                                                         |
 | PB0           | TMC2209 #2 **EN**                        | Active low                                              |
 | PA9           | Slot sensor ZERO 01 **D0**               | High while the flag is in the slot (internal pull-down) |
 | PA8           | Slot sensor ZERO 02 **D0**               | High while the flag is in the slot (internal pull-down) |
-| PB6           | Buzzer **+** (other leg to GND)          | TIM4_CH1 PWM                                            |
+| PB6           | **1 kΩ** → BC368 **base** (buzzer driver) | TIM4_CH1 PWM                                            |
 | PB7           | Button **REPEAT** (other leg to GND)     | Internal pull-up                                        |
 | PB8           | Button **NEXT** (other leg to GND)       | Internal pull-up                                        |
 | PB9           | Button **PREV** (other leg to GND)       | Internal pull-up                                        |
@@ -252,7 +254,11 @@ Other connections:
 
 - **TMC2209 MS1 and MS2 → GND** on both drivers. This sets UART address 0;
   each driver has its own UART, so both can use the same address.
-- **TMC2209 VM → 12 V, VIO → 3.3 V**, and both GND pins → GND.
+- **TMC2209 VM → 12 V, VCC_IO → 3.3 V**, and both GND pins → GND. The
+  BIGTREETECH TMC2209 V1.2 module has two pins labelled PDN; the UART is on
+  J1 pin 4 by factory default (a solder bridge selects it).
+- **Buzzer driver:** BC368 emitter → GND, collector → buzzer −, buzzer + → 5 V.
+  PB6 drives the base through 1 kΩ, so a high PB6 turns the transistor on.
 - **Motor coils:** coil A → A1/A2, coil B → B1/B2. Wire colors vary between
   motors, so find the pairs with a multimeter (the two wires of one coil show a
   few ohms between them).

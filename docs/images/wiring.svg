@@ -1,10 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1160" width="1500" height="1160" font-family="Helvetica, Arial, sans-serif">
-<rect width="1500" height="1160" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1185" width="1500" height="1185" font-family="Helvetica, Arial, sans-serif">
+<rect width="1500" height="1185" fill="#ffffff"/>
 <text x="24" y="36" font-size="20" fill="#222" text-anchor="start" font-weight="bold">single-cell-braille-controller — wiring</text>
 <text x="24" y="58" font-size="12" fill="#555" text-anchor="start" font-weight="normal">Breakout-board level. Pin order on your modules may differ from the drawing: match by the printed label.</text>
 <path d="M1420,90 L225,90 L225,700 L1225,700" stroke="#222222" stroke-width="4" fill="none" stroke-linejoin="round"/>
 <path d="M1420,105 L240,105 L240,685 L1225,685" stroke="#ff8c00" stroke-width="4" fill="none" stroke-linejoin="round"/>
-<path d="M255,490 L255,670 L1225,670" stroke="#d62728" stroke-width="4" fill="none" stroke-linejoin="round"/>
+<path d="M255,480 L255,670 L1225,670" stroke="#d62728" stroke-width="4" fill="none" stroke-linejoin="round"/>
+<path d="M210,500 L210,75 L1100,75" stroke="#c2185b" stroke-width="4" fill="none" stroke-linejoin="round"/>
+<text x="1108" y="79" font-size="11" fill="#c2185b" text-anchor="start" font-weight="bold">+5V</text>
 <text x="1428" y="94" font-size="11" fill="#222222" text-anchor="start" font-weight="bold">GND</text>
 <text x="1428" y="109" font-size="11" fill="#ff8c00" text-anchor="start" font-weight="bold">+3V3</text>
 <text x="1233" y="674" font-size="11" fill="#d62728" text-anchor="start" font-weight="bold">+12V</text>
@@ -13,12 +15,15 @@
 <path d="M182,540 L225,540" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M182,540 L225,540" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="225" cy="540" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M182,515 L240,515" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M182,515 L240,515" stroke="#ff8c00" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="240" cy="515" r="4.5" fill="#ff8c00" stroke="#fff" stroke-width="1.2"/>
-<path d="M182,490 L255,490" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M182,490 L255,490" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="255" cy="490" r="4.5" fill="#d62728" stroke="#fff" stroke-width="1.2"/>
+<path d="M182,520 L240,520" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M182,520 L240,520" stroke="#ff8c00" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="240" cy="520" r="4.5" fill="#ff8c00" stroke="#fff" stroke-width="1.2"/>
+<path d="M182,500 L210,500" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M182,500 L210,500" stroke="#c2185b" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="210" cy="500" r="4.5" fill="#c2185b" stroke="#fff" stroke-width="1.2"/>
+<path d="M182,480 L255,480" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M182,480 L255,480" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="255" cy="480" r="4.5" fill="#d62728" stroke="#fff" stroke-width="1.2"/>
 <path d="M305,330 L305,440 L460,440 L460,478" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M305,330 L305,440 L460,440 L460,478" stroke="#8c564b" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M333,330 L333,430 L486,430 L486,478" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
@@ -53,11 +58,18 @@
 <path d="M705,232 L705,90" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M705,232 L705,90" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="705" cy="90" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M798,478 L798,340 L1060,340 L1060,272" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M798,478 L798,340 L1060,340 L1060,272" stroke="#e377c2" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M1060,208 L1060,90" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M1060,208 L1060,90" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="1060" cy="90" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M798,478 L798,320 L985,320 L985,258 L998,258" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M798,478 L798,320 L985,320 L985,258 L998,258" stroke="#e377c2" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M1026,258 L1050,258" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M1026,258 L1050,258" stroke="#e377c2" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M1066,210 L1066,236" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M1066,210 L1066,236" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M1066,280 L1066,296 L1112,296 L1112,90" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M1066,280 L1066,296 L1112,296 L1112,90" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="1112" cy="90" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M1066,162 L1066,75" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M1066,162 L1066,75" stroke="#c2185b" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="1066" cy="75" r="4.5" fill="#c2185b" stroke="#fff" stroke-width="1.2"/>
 <path d="M824,478 L824,355 L1170,355 L1170,272" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M824,478 L824,355 L1170,355 L1170,272" stroke="#6a3d9a" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M1170,208 L1170,90" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
@@ -163,16 +175,19 @@
 <path d="M1085,906 L1085,975" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M1110,906 L1110,975" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1110,906 L1110,975" stroke="#1f77b4" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<rect x="40" y="425" width="150" height="140" rx="6" fill="#b03a2e" stroke="#00000055"/>
+<rect x="40" y="415" width="150" height="150" rx="6" fill="#b03a2e" stroke="#00000055"/>
 <rect x="12" y="495" width="34" height="40" rx="4" fill="#111"/>
 <circle cx="24" cy="515" r="7" fill="#444"/>
-<text x="54" y="519" font-size="10" fill="#fff" text-anchor="start" font-weight="bold">← 12 V DC in</text>
-<text x="115" y="446" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">AMS1117-3.3</text>
-<text x="115" y="462" font-size="10" fill="#fde" text-anchor="middle" font-weight="normal">breakout</text>
-<rect x="178" y="486" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="174" y="494" font-size="10" fill="#fff" text-anchor="end" font-weight="normal">12V OUT</text>
-<rect x="178" y="511" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="174" y="519" font-size="10" fill="#fff" text-anchor="end" font-weight="normal">3V3</text>
+<text x="54" y="519" font-size="10" fill="#fff" text-anchor="start" font-weight="bold">← 12 V</text>
+<text x="54" y="532" font-size="10" fill="#fff" text-anchor="start" font-weight="bold">DC in</text>
+<text x="115" y="436" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">Power breakout</text>
+<text x="115" y="452" font-size="9" fill="#fde" text-anchor="middle" font-weight="normal">AMS1117 · 12 V / 5 V / 3.3 V</text>
+<rect x="178" y="476" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
+<text x="174" y="484" font-size="10" fill="#fff" text-anchor="end" font-weight="normal">12V OUT</text>
+<rect x="178" y="496" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
+<text x="174" y="504" font-size="10" fill="#fff" text-anchor="end" font-weight="normal">5V</text>
+<rect x="178" y="516" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
+<text x="174" y="524" font-size="10" fill="#fff" text-anchor="end" font-weight="normal">3V3</text>
 <rect x="178" y="536" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="174" y="544" font-size="10" fill="#fff" text-anchor="end" font-weight="normal">GND</text>
 <text x="115" y="586" font-size="10" fill="#a33" text-anchor="middle" font-weight="normal" font-style="italic">LDO burns ≈(12−3.3)·I</text>
@@ -222,12 +237,28 @@
 <rect x="612" y="284" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="619.5" y="279" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 619.5 279)">A0</text>
 <text x="616" y="306" font-size="9" fill="#999" text-anchor="middle" font-weight="normal" font-style="italic">nc</text>
-<circle cx="1060" cy="240" r="30" fill="#151515"/>
-<circle cx="1060" cy="240" r="5" fill="#444"/>
-<text x="1060" y="214" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">−</text>
-<text x="1060" y="272" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">+</text>
-<text x="1022" y="236" font-size="11" fill="#222" text-anchor="end" font-weight="bold" stroke="#fff" stroke-width="3" paint-order="stroke">Passive piezo</text>
-<text x="1022" y="250" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">PB6 · TIM4 PWM</text>
+<circle cx="1066" cy="186" r="24" fill="#151515"/>
+<circle cx="1066" cy="186" r="4" fill="#444"/>
+<text x="1066" y="176" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">+</text>
+<text x="1066" y="205" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">−</text>
+<text x="1034" y="182" font-size="11" fill="#222" text-anchor="end" font-weight="bold" stroke="#fff" stroke-width="3" paint-order="stroke">Passive piezo</text>
+<text x="1034" y="196" font-size="9" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">+ to +5V, − to collector</text>
+<rect x="998" y="253" width="28" height="10" rx="4" fill="#e9d3a6" stroke="#8a6d3b"/>
+<rect x="1004" y="253" width="3" height="10" fill="#8b4513"/>
+<rect x="1010" y="253" width="3" height="10" fill="#111"/>
+<rect x="1016" y="253" width="3" height="10" fill="#d62728"/>
+<text x="1012.0" y="248" font-size="9" fill="#555" text-anchor="middle" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">1 kΩ</text>
+<circle cx="1062" cy="258" r="17" fill="#fff" stroke="#222" stroke-width="1.5"/>
+<line x1="1050" y1="248" x2="1050" y2="268" stroke="#222" stroke-width="2.5"/>
+<line x1="1050" y1="254" x2="1066" y2="236" stroke="#222" stroke-width="1.8"/>
+<line x1="1050" y1="262" x2="1066" y2="280" stroke="#222" stroke-width="1.8"/>
+<polygon points="1066,280 1057,277 1062,270" fill="#222"/>
+<text x="1086" y="256" font-size="11" fill="#222" text-anchor="start" font-weight="bold" stroke="#fff" stroke-width="3" paint-order="stroke">BC368</text>
+<text x="1086" y="269" font-size="9" fill="#555" text-anchor="start" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">NPN</text>
+<text x="1072" y="238" font-size="8" fill="#555" text-anchor="start" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">C</text>
+<text x="1072" y="282" font-size="8" fill="#555" text-anchor="start" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">E</text>
+<text x="1046" y="280" font-size="8" fill="#555" text-anchor="start" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">B</text>
+<text x="990" y="334" font-size="9" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">PB6 · TIM4_CH1 PWM</text>
 <rect x="1148" y="218" width="44" height="44" rx="4" fill="#3a3a3a"/>
 <circle cx="1170" cy="240" r="13" fill="#111" stroke="#666"/>
 <rect x="1166" y="208" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -341,7 +372,7 @@
 <rect x="327" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="334.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 334.5 783)">GND</text>
 <rect x="353" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="360.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 360.5 783)">VIO</text>
+<text x="360.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 360.5 783)">VCC_IO</text>
 <rect x="379" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="386.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 386.5 783)">GND</text>
 <rect x="405" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -351,7 +382,7 @@
 <rect x="457" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="464.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 464.5 783)">STEP</text>
 <rect x="483" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="490.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 490.5 783)">PDN_UART</text>
+<text x="490.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 490.5 783)">PDN</text>
 <rect x="509" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="516.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 516.5 783)">DIR</text>
 <rect x="535" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -374,7 +405,7 @@
 <rect x="1003" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="1010.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1010.5 783)">STEP</text>
 <rect x="1029" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="1036.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1036.5 783)">PDN_UART</text>
+<text x="1036.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1036.5 783)">PDN</text>
 <rect x="1055" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="1062.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1062.5 783)">MS1</text>
 <rect x="1081" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -382,7 +413,7 @@
 <rect x="1107" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="1114.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1114.5 783)">GND</text>
 <rect x="1133" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="1140.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1140.5 783)">VIO</text>
+<text x="1140.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1140.5 783)">VCC_IO</text>
 <rect x="1159" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="1166.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1166.5 783)">GND</text>
 <rect x="1185" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -400,6 +431,8 @@
 <text x="280" y="846" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">MS1 = MS2 = GND</text>
 <text x="280" y="860" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">→ UART address 0</text>
 <text x="280" y="874" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">(both drivers)</text>
+<text x="280" y="896" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">PDN = J1 pin 4, the UART</text>
+<text x="280" y="910" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">pin by factory default</text>
 <rect x="352" y="975" width="140" height="140" rx="10" fill="#8d939b" stroke="#555"/>
 <circle cx="422" cy="1050" r="34" fill="#6c7279"/>
 <circle cx="422" cy="1050" r="7" fill="#ddd"/>
@@ -420,39 +453,42 @@
 <text x="990" y="1035" font-size="12" fill="#222" text-anchor="end" font-weight="bold">NEMA17 · motor 02</text>
 <text x="990" y="1051" font-size="10" fill="#555" text-anchor="end" font-weight="normal">disc 2 · dots 2, 3, 5, 6</text>
 <text x="990" y="1067" font-size="10" fill="#555" text-anchor="end" font-weight="normal">coil A → A1/A2 · coil B → B1/B2</text>
-<rect x="1258" y="746" width="222" height="384" rx="6" fill="#f7f7f7" stroke="#ddd"/>
+<rect x="1258" y="746" width="222" height="420" rx="6" fill="#f7f7f7" stroke="#ddd"/>
 <text x="1270" y="766" font-size="12" fill="#222" text-anchor="start" font-weight="bold">Legend</text>
 <line x1="1270" y1="784" x2="1296" y2="784" stroke="#d62728" stroke-width="4"/>
 <text x="1304" y="788" font-size="10" fill="#222" text-anchor="start" font-weight="normal">+12 V (motor supply)</text>
-<line x1="1270" y1="803" x2="1296" y2="803" stroke="#ff8c00" stroke-width="4"/>
-<text x="1304" y="807" font-size="10" fill="#222" text-anchor="start" font-weight="normal">+3.3 V (logic)</text>
-<line x1="1270" y1="822" x2="1296" y2="822" stroke="#222222" stroke-width="4"/>
-<text x="1304" y="826" font-size="10" fill="#222" text-anchor="start" font-weight="normal">GND (common)</text>
-<line x1="1270" y1="841" x2="1296" y2="841" stroke="#8c564b" stroke-width="2.5"/>
-<text x="1304" y="845" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI CS (PB12)</text>
-<line x1="1270" y1="860" x2="1296" y2="860" stroke="#d4a900" stroke-width="2.5"/>
-<text x="1304" y="864" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI SCK / UART</text>
-<line x1="1270" y1="879" x2="1296" y2="879" stroke="#2ca02c" stroke-width="2.5"/>
-<text x="1304" y="883" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI MISO / STEP</text>
-<line x1="1270" y1="898" x2="1296" y2="898" stroke="#1f77b4" stroke-width="2.5"/>
-<text x="1304" y="902" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI MOSI / DIR</text>
-<line x1="1270" y1="917" x2="1296" y2="917" stroke="#bcbd22" stroke-width="2.5"/>
-<text x="1304" y="921" font-size="10" fill="#222" text-anchor="start" font-weight="normal">W5500 RST (PA10)</text>
-<line x1="1270" y1="936" x2="1296" y2="936" stroke="#9a9a9a" stroke-width="2.5" stroke-dasharray="6 4"/>
-<text x="1304" y="940" font-size="10" fill="#222" text-anchor="start" font-weight="normal">W5500 INT (PB5, unused)</text>
-<line x1="1270" y1="955" x2="1296" y2="955" stroke="#7f7f7f" stroke-width="2.5"/>
-<text x="1304" y="959" font-size="10" fill="#222" text-anchor="start" font-weight="normal">Driver EN</text>
-<line x1="1270" y1="974" x2="1296" y2="974" stroke="#17becf" stroke-width="2.5"/>
-<text x="1304" y="978" font-size="10" fill="#222" text-anchor="start" font-weight="normal">ZERO sensor D0</text>
-<line x1="1270" y1="993" x2="1296" y2="993" stroke="#6a3d9a" stroke-width="2.5"/>
-<text x="1304" y="997" font-size="10" fill="#222" text-anchor="start" font-weight="normal">Buttons</text>
-<line x1="1270" y1="1012" x2="1296" y2="1012" stroke="#e377c2" stroke-width="2.5"/>
-<text x="1304" y="1016" font-size="10" fill="#222" text-anchor="start" font-weight="normal">Buzzer</text>
-<circle cx="1283" cy="1031" r="4.5" fill="#555" stroke="#fff" stroke-width="1.2"/>
-<text x="1304" y="1035" font-size="10" fill="#222" text-anchor="start" font-weight="normal">junction (connected)</text>
-<text x="1270" y="1055" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">Crossing wires are not connected.</text>
-<text x="1270" y="1068" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">Buttons and the buzzer return to</text>
-<text x="1270" y="1081" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">GND; buttons use the MCU's internal</text>
-<text x="1270" y="1094" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">pull-ups, no resistors needed.</text>
-<text x="1270" y="1107" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">Sensor A0 pins stay unconnected.</text>
+<line x1="1270" y1="803" x2="1296" y2="803" stroke="#c2185b" stroke-width="4"/>
+<text x="1304" y="807" font-size="10" fill="#222" text-anchor="start" font-weight="normal">+5 V (buzzer only)</text>
+<line x1="1270" y1="822" x2="1296" y2="822" stroke="#ff8c00" stroke-width="4"/>
+<text x="1304" y="826" font-size="10" fill="#222" text-anchor="start" font-weight="normal">+3.3 V (logic)</text>
+<line x1="1270" y1="841" x2="1296" y2="841" stroke="#222222" stroke-width="4"/>
+<text x="1304" y="845" font-size="10" fill="#222" text-anchor="start" font-weight="normal">GND (common)</text>
+<line x1="1270" y1="860" x2="1296" y2="860" stroke="#8c564b" stroke-width="2.5"/>
+<text x="1304" y="864" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI CS (PB12)</text>
+<line x1="1270" y1="879" x2="1296" y2="879" stroke="#d4a900" stroke-width="2.5"/>
+<text x="1304" y="883" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI SCK / UART</text>
+<line x1="1270" y1="898" x2="1296" y2="898" stroke="#2ca02c" stroke-width="2.5"/>
+<text x="1304" y="902" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI MISO / STEP</text>
+<line x1="1270" y1="917" x2="1296" y2="917" stroke="#1f77b4" stroke-width="2.5"/>
+<text x="1304" y="921" font-size="10" fill="#222" text-anchor="start" font-weight="normal">SPI MOSI / DIR</text>
+<line x1="1270" y1="936" x2="1296" y2="936" stroke="#bcbd22" stroke-width="2.5"/>
+<text x="1304" y="940" font-size="10" fill="#222" text-anchor="start" font-weight="normal">W5500 RST (PA10)</text>
+<line x1="1270" y1="955" x2="1296" y2="955" stroke="#9a9a9a" stroke-width="2.5" stroke-dasharray="6 4"/>
+<text x="1304" y="959" font-size="10" fill="#222" text-anchor="start" font-weight="normal">W5500 INT (PB5, unused)</text>
+<line x1="1270" y1="974" x2="1296" y2="974" stroke="#7f7f7f" stroke-width="2.5"/>
+<text x="1304" y="978" font-size="10" fill="#222" text-anchor="start" font-weight="normal">Driver EN</text>
+<line x1="1270" y1="993" x2="1296" y2="993" stroke="#17becf" stroke-width="2.5"/>
+<text x="1304" y="997" font-size="10" fill="#222" text-anchor="start" font-weight="normal">ZERO sensor D0</text>
+<line x1="1270" y1="1012" x2="1296" y2="1012" stroke="#6a3d9a" stroke-width="2.5"/>
+<text x="1304" y="1016" font-size="10" fill="#222" text-anchor="start" font-weight="normal">Buttons</text>
+<line x1="1270" y1="1031" x2="1296" y2="1031" stroke="#e377c2" stroke-width="2.5"/>
+<text x="1304" y="1035" font-size="10" fill="#222" text-anchor="start" font-weight="normal">Buzzer drive (PB6)</text>
+<circle cx="1283" cy="1050" r="4.5" fill="#555" stroke="#fff" stroke-width="1.2"/>
+<text x="1304" y="1054" font-size="10" fill="#222" text-anchor="start" font-weight="normal">junction (connected)</text>
+<text x="1270" y="1074" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">Crossing wires are not connected.</text>
+<text x="1270" y="1087" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">Buttons close to GND and use the</text>
+<text x="1270" y="1100" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">MCU's internal pull-ups.</text>
+<text x="1270" y="1113" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">The BC368 switches the piezo's</text>
+<text x="1270" y="1126" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">low side (emitter to GND).</text>
+<text x="1270" y="1139" font-size="9" fill="#777" text-anchor="start" font-weight="normal" font-style="italic">Sensor A0 pins stay unconnected.</text>
 </svg>
