@@ -218,8 +218,6 @@ text(115, 436, "Power breakout", 12, "#fff", "middle", "bold")
 text(115, 452, "AMS1117 · 12 V / 5 V / 3.3 V", 9, "#fde", "middle")
 for y, n in ((480, "12V OUT"), (500, "5V"), (520, "3V3"), (540, "GND")):
     pin(182, y); text(174, y + 4, n, 10, "#fff", "end")
-text(115, 586, "LDO burns ≈(12−3.3)·I", 10, "#a33", "middle", italic=True)
-text(115, 600, "— it gets warm", 10, "#a33", "middle", italic=True)
 
 # W5500
 box(290, 150, 175, 180, "#2b2b2b")
