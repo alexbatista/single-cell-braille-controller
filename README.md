@@ -93,7 +93,7 @@ position errors never accumulate.
 at 1/8 microstepping. That makes every position exactly 100 microsteps. Both
 discs move at the same time at one revolution per second, always along the
 shorter path, so any character change takes at most 0.5 s. See
-[docs/08](docs/08-motion-and-homing.md).
+[docs/05](docs/05-motion-and-homing.md).
 
 ### Reading a machine, one value at a time
 
@@ -123,7 +123,8 @@ The buzzer plays five distinct sounds: request sent, data received, newer data
 waiting, link fault, and "nothing there". The fault and "newer data" sounds are
 rate-limited. Changes that happen during a read are not queued: one slot holds
 the newest package, so the operator never has to work through a backlog of
-outdated values. See [docs/10](docs/10-reader-ui-and-buzzer.md).
+outdated values. See [docs/09](docs/09-reader-ui.md) and
+[docs/10](docs/10-sound-feedback.md).
 
 ### Block diagram
 
@@ -275,7 +276,7 @@ specification and are fixed when the disc is printed.
 The enclosure, discs, and actuator assembly (`.step` files) will be published in
 `hardware/enclosure/`. Until then, the firmware's assumptions about the
 mechanics (disc positions, the homing tab, rotation direction) are documented in
-[docs/08](docs/08-motion-and-homing.md).
+[docs/05](docs/05-motion-and-homing.md).
 
 ---
 
@@ -318,7 +319,7 @@ The input source is chosen when you configure the build:
 | `BRAILLE_INPUT`    | What it builds                                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | `MODBUS` (default) | The PLC reader described above: W5500 + buttons + buzzer                                                            |
-| `USB_CDC`          | Bench variant: type a character into a USB virtual COM port and the cell renders it ([docs/06](docs/06-usb-cdc.md)) |
+| `USB_CDC`          | Bench variant: type a character into a USB virtual COM port and the cell renders it ([docs/14](docs/14-usb-cdc-variant.md)) |
 
 ```bash
 cmake --preset Debug -DBRAILLE_INPUT=USB_CDC
@@ -364,7 +365,7 @@ There is no runtime configuration: edit the file and reflash.
 
 The device is a Modbus TCP **client**: it connects to the PLC and polls it, so
 nothing listens on the device itself. The 11 coils and the braille label for
-each are listed in [docs/10 §10.2](docs/10-reader-ui-and-buzzer.md#102-the-label-table-and-the-invariant-that-makes-it-safe).
+each are listed in [docs/09 §9.3](docs/09-reader-ui.md#93-labels).
 To adapt the device to another machine, change that table and `PLC_COIL_COUNT`.
 
 ### 2. Power up
@@ -394,7 +395,7 @@ sudo python3 tools/plc_sim.py --toggle          # serve the 11 coils, flipping o
 ```
 
 The full bench procedure, including how to confirm the board is on the network,
-is in [docs/11](docs/11-hardware-bring-up.md).
+is in [docs/13](docs/13-build-test-debug.md#138-bring-up-sequence).
 
 ---
 
@@ -412,19 +413,27 @@ make -C tests
 
 ## Documentation
 
-The guides in [`docs/`](docs/README.md) explain the firmware layer by layer:
+The [`docs/`](docs/README.md) folder is the firmware's developer documentation,
+organised by subsystem:
 
-1. [Architecture layers](docs/01-architecture-layers.md)
-2. [Execution flow, from power-on to a rendered cell](docs/02-execution-flow.md)
-3. [Stepper module](docs/03-stepper-module.md)
-4. [TMC2209 how-to](docs/04-tmc2209-howto.md)
-5. [Is it overengineered?](docs/05-is-it-overengineered.md)
-6. [USB CDC variant](docs/06-usb-cdc.md)
-7. [Character encoding](docs/07-character-encoding.md)
-8. [Motion and homing](docs/08-motion-and-homing.md)
-9. [Modbus TCP and the PLC link](docs/09-modbus-tcp-and-plc-link.md)
-10. [Reader UI and buzzer](docs/10-reader-ui-and-buzzer.md)
-11. [Hardware bring-up](docs/11-hardware-bring-up.md)
+1. [Architecture](docs/01-architecture.md)
+2. [MCU resources](docs/02-mcu-resources.md)
+3. [Execution flow](docs/03-execution-flow.md)
+4. [TMC2209](docs/04-tmc2209.md)
+5. [Motion and homing](docs/05-motion-and-homing.md)
+6. [Braille encoding](docs/06-braille-encoding.md)
+7. [W5500](docs/07-w5500.md)
+8. [Modbus TCP and the PLC link](docs/08-modbus-tcp.md)
+9. [Reader UI and buttons](docs/09-reader-ui.md)
+10. [Sound feedback](docs/10-sound-feedback.md)
+11. [Adding a protocol](docs/11-adding-a-protocol.md)
+12. [Porting to a new board](docs/12-porting-to-a-new-board.md)
+13. [Build, test and debug](docs/13-build-test-debug.md)
+14. [USB CDC bench variant](docs/14-usb-cdc-variant.md)
+
+Also: [known limitations](docs/known-limitations.md) and the archived
+[design record](docs/decisions/2026-09-09-modbus-tcp-braille-reader.md) of the
+Modbus TCP reader.
 
 API reference: run `doxygen` at the repository root to generate `docs/html/`.
 
@@ -437,8 +446,8 @@ Lib/        vendored TMC2209 driver and WIZnet W5500 ioLibrary, each with an STM
 Core/       STM32CubeMX-generated startup, clocks and peripheral init
 Drivers/    ST HAL and CMSIS (vendor code)
 tests/      host-side unit tests
-tools/      PLC simulator and its self-test
-docs/       design guides and images
+docs/       developer documentation, design record, images
+tools/      PLC simulator and self-test, wiring diagram generator
 ```
 
 ## Project status

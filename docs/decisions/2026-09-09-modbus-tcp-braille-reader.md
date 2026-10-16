@@ -1,7 +1,16 @@
 # MODBUS TCP braille reader — design
 
+> **Archived design record.** This is the design that the Modbus TCP reader
+> was built from, kept for its rationale (section 3 records the decisions and
+> the alternatives rejected). It has been implemented, and the code has moved
+> on since: state names, configuration names (now prefixed `PLC_`), the button
+> debounce scheme, test coverage and memory figures differ. For current
+> behaviour see [08-modbus-tcp.md](../08-modbus-tcp.md),
+> [09-reader-ui.md](../09-reader-ui.md) and
+> [10-sound-feedback.md](../10-sound-feedback.md).
+
 **Date:** 2026-09-09
-**Status:** approved, ready for implementation planning
+**Status:** implemented (archived)
 **Target:** STM32F103C8T6 (64 KB flash / 20 KB RAM), W5500 Ethernet over SPI2
 
 ## 1. Purpose

@@ -1,142 +1,63 @@
-# Study guides — single-cell-braille-controller
+# Firmware documentation
 
-This is a Blue-Pill-class STM32F103 project (CubeMX generated Core, a vendored
-TMC2209 stepper-driver library, a vendored W5500 Ethernet library, and a
-hand-written App layer) that renders one braille cell. By default, the device
-reads a fixed package of 11 boolean signals from a PLC over MODBUS TCP and
-renders them one key/value pair at a time, navigated by three buttons and
-confirmed by a buzzer, so the whole interface is usable without sight. A
-character typed into a USB virtual COM port and rendered directly, the
-original input path, still exists but is now the non-default build variant —
-see [06-usb-cdc.md](06-usb-cdc.md).
+Developer documentation for the single-cell braille controller firmware. The
+project overview, parts list, wiring and quick start are in the root
+[README](../README.md); this folder explains how the firmware works and how to
+change it.
 
-These guides exist because the codebase mixes several different "levels" of
-code (register/CMSIS, ST HAL, vendored driver libraries, ST's USB middleware,
-and your own App code), and it's easy to lose track of which file is
-responsible for what.
+## System in one paragraph
 
-Read them in order the first time; after that, use them as reference.
+An STM32F103C8 (Blue Pill) polls a PLC over Modbus TCP through a W5500 Ethernet
+controller, reading a package of boolean signals every 500 ms. A reader state
+machine presents one signal at a time on a single braille cell: one or two
+label letters, then the value as all dots flat or all raised. The cell is two
+embossed discs, each turned by a NEMA17 stepper through a TMC2209 driver
+(configured over UART, moved over STEP/DIR) and homed against a slotted IR
+sensor. Three buttons navigate (NEXT, PREV, REPEAT) and a passive buzzer gives
+audio feedback. Everything runs in a cooperative main loop without an RTOS. A
+build option replaces the PLC path with characters typed over USB.
 
-1. **[01-architecture-layers.md](01-architecture-layers.md)** — the layers of
-   the codebase (CMSIS → ST HAL → Core/ → USB middleware → App/ + Lib/), which
-   files belong to which, why the split exists, and how the App modules depend
-   on each other.
-2. **[02-execution-flow.md](02-execution-flow.md)** — a trace of what actually
-   happens from power-on to a rendered cell, in execution order: the 48 MHz
-   clock tree, driver bring-up, homing, the `App_run()` loop, one microstep all
-   the way down to the timer registers, and what runs in interrupt context.
-3. **[03-stepper-module.md](03-stepper-module.md)** — deep dive on
-   `App/Inc/stepper.h` + `stepper_hal.h`: the step budget, the hardware pulse
-   train and its interrupt, why the 16-bit timer period has to be clamped, and
-   where a mirrored motor's DIR polarity is corrected.
-4. **[04-tmc2209-howto.md](04-tmc2209-howto.md)** — practical "how to use
-   the TMC2209 library" reference: what each function this project calls
-   actually does, plus a categorized map of the rest of the API you haven't
-   used yet. Not a protocol deep-dive.
-5. **[05-is-it-overengineered.md](05-is-it-overengineered.md)** — a direct,
-   evidence-based answer to "is this too abstracted for what it does,"
-   including the three places where the answer is genuinely "a little, yes."
-6. **[06-usb-cdc.md](06-usb-cdc.md)** — the USB virtual-COM-port path (the
-   non-default `BRAILLE_INPUT=USB_CDC` build variant): why `Middlewares/`
-   and `USB_DEVICE/` exist, how the stack was enabled, the full interrupt
-   call chain in both directions, and a line-by-line reading of
-   `CDC_Receive_FS` / `CDC_Transmit_FS` / `CDC_ReadChar` / `App_run`.
-7. **[07-character-encoding.md](07-character-encoding.md)** — how a keypress
-   becomes a disc angle: codepoints vs. bytes, why UTF-8 splits every accented
-   letter into two bytes, and every mask in the `braille_disc.c` decoder
-   explained in terms of characters instead of magic hex. Covers why the bytes
-   can't go straight to the pattern table, what the decoder keeps between calls,
-   and why a sequence can decode cleanly and still be rejected as illegal
-   (overlongs, surrogates, codepoints past U+10FFFF).
-8. **[08-motion-and-homing.md](08-motion-and-homing.md)** — the motor side of
-   `motion_planner.c`: the three frames of reference (dots → angles →
-   microsteps), shortest-path moves, why both discs need `invert_dir` and what
-   a mirrored disc renders instead, and the four-phase homing routine that
-   makes an absolute angle mean anything — including every bound it is limited
-   by and how it reports failure.
-9. **[09-modbus-tcp-and-plc-link.md](09-modbus-tcp-and-plc-link.md)** — the
-   default input path: why the device is a MODBUS TCP client and what that
-   means for "the PLC sent something," the request/response frame byte by
-   byte, why the response parser is strict, the `plc_link` connection state
-   machine, and what to check when the W5500 SPI link will not come up.
-10. **[10-reader-ui-and-buzzer.md](10-reader-ui-and-buzzer.md)** — the
-    reading model: why one button press plays a whole labelled value, the
-    label table and the invariant that keeps mixed-length labels
-    unambiguous, the four navigation states, why there is one pending
-    package slot instead of a queue, and the five buzzer patterns.
-11. **[11-hardware-bring-up.md](11-hardware-bring-up.md)** — the checklist of
-    hardware verification this firmware still needs, in the order to attempt
-    it: SPI first, then the buzzer, then the buttons, then an end-to-end
-    read against a real PLC.
+## Documents
 
-## Project map (for orientation)
-
-```
-Core/       STM32CubeMX-generated boilerplate: clocks, GPIO init, USART init,
-            timer (STEP PWM) init, interrupt vectors, and main() itself.
-            Regenerated by CubeMX; your code only lives inside "USER CODE"
-            comment blocks here.
-Drivers/    ST-supplied CMSIS device headers + STM32F1xx HAL driver source.
-            Third-party, never edited.
-Middlewares/  ST's USB Device Library (core + CDC class). Vendor code, only
-            linked in the non-default USB_CDC build variant.
-USB_DEVICE/   CubeMX glue binding that library to this MCU, plus usbd_cdc_if.c,
-            where the receive ring buffer and CDC_ReadChar() live. Same
-            USB_CDC-only condition as Middlewares/.
-Lib/tmc2209/  Vendored, portable TMC2209 driver library (core + STM32 port).
-            Third-party-style code, but small enough to read in full.
-Lib/w5500/    Vendored WIZnet ioLibrary (Ethernet/ tree only) plus a
-            w5500_stm32.c SPI/CS/reset port, same core+port split as
-            Lib/tmc2209. Always linked; it is what the default MODBUS build
-            talks to the PLC through.
-App/        Your own application code: app_main.c (the two entry points, one
-            wiring per input variant), braille_disc.c (character/dot-pattern
-            -> disc angles), motion_planner.c (both motors, moves, homing),
-            the stepper module (portable core + STM32 port), and — in the
-            default MODBUS variant — plc_link.c, modbus_tcp.c, plc_packet.c,
-            reader_ui.c, buttons.c, buzzer.c and fault_led.c. This is what
-            you're adding to; everything else is scaffolding underneath it.
-docs/       These guides. docs/html is Doxygen output generated from the App
-            sources (see Doxyfile) and is not tracked by git.
-```
-
-## Hardware map (for orientation)
-
-| Signal | Motor 01 | Motor 02 |
+| # | Document | Content |
 |---|---|---|
-| TMC2209 UART | USART2, PA2/PA3 | USART3, PB10/PB11 |
-| ENN (driver enable) | PA5 | PB0 |
-| STEP | PA1 (TIM2_CH2) | PB1 (TIM3_CH4) |
-| DIR | PA4 | PA7 |
-| ZERO sensor | PA9 | PA8 |
-| Disc | single row: dots 1, 4 (4 positions) | double row: dots 2, 3, 5, 6 (16 positions) |
+| 1 | [Architecture](01-architecture.md) | Layers, modules, dependencies, core + port and callback-table patterns, build variants, CubeMX rules |
+| 2 | [MCU resources](02-mcu-resources.md) | Clock tree, full pin map, peripherals, interrupt priorities, memory, silent failure paths |
+| 3 | [Execution flow](03-execution-flow.md) | Reset to main loop, `App_init()`, `App_run()`, interrupts, blocking budget, one microstep traced to the registers |
+| 4 | [TMC2209](04-tmc2209.md) | Module pinout, single-wire UART, configuration written at start-up, operating mode, library and port |
+| 5 | [Motion and homing](05-motion-and-homing.md) | Units, stepper module, pulse trains, shortest-path moves, direction inversion, homing and its bounds |
+| 6 | [Braille encoding](06-braille-encoding.md) | Dot numbering, positional binary mapping, glyph table, value glyphs, adding characters |
+| 7 | [W5500](07-w5500.md) | SPI and port, bring-up, socket buffers, registers relied on, unused features, vendored library |
+| 8 | [Modbus TCP and the PLC link](08-modbus-tcp.md) | Polling model, frames, strict parser, link state machine, `plc_config.h`, diagnosing the link |
+| 9 | [Reader UI and buttons](09-reader-ui.md) | Reading model, labels, states and event table, pending slot, button debouncing |
+| 10 | [Sound feedback](10-sound-feedback.md) | Buzzer circuit, tone generation, the five patterns, rate limits |
+| 11 | [Adding a protocol](11-adding-a-protocol.md) | The seam, reusable modules, the link contract, build-time selection |
+| 12 | [Porting to a new board](12-porting-to-a-new-board.md) | Pinout rules, fixed resources, PCB checklist, first power-up |
+| 13 | [Build, test and debug](13-build-test-debug.md) | Toolchain, builds, flashing, live inspection, host tests, simulator, bring-up, blink codes, troubleshooting |
+| 14 | [USB CDC bench variant](14-usb-cdc-variant.md) | USB input path and the UTF-8 decoder |
+| — | [Known limitations](known-limitations.md) | Accepted gaps, technical debt, untested areas |
+| — | [Design record: Modbus TCP reader](decisions/2026-09-09-modbus-tcp-braille-reader.md) | Archived design and its rationale |
 
-The default MODBUS build adds the W5500 Ethernet link, the buzzer and the
-three navigation buttons:
+## Reading paths
 
-| Signal | Pin | Notes |
-|---|---|---|
-| `ETH_NSS` (SPI2 chip select) | PB12 | software-driven, active low |
-| SPI2 SCK / MISO / MOSI | PB13 / PB14 / PB15 | mode 0, MSB-first, 12 Mbit/s |
-| `ETH_RESET` | PA10 | held low to reset the W5500 |
-| `ETH_INT` | PB5 | wired and owned, but unused by design — see [09-modbus-tcp-and-plc-link.md §9.6](09-modbus-tcp-and-plc-link.md#96-eth_int-pb5-wired-owned-deliberately-unused) |
-| `BUZZER` | PB6 (TIM4_CH1) | piezo tone patterns, see [10-reader-ui-and-buzzer.md §10.5](10-reader-ui-and-buzzer.md#105-why-the-buzzer-blocks-and-the-five-patterns) |
-| `BTN_REPEAT` | PB7 | falling edge, EXTI9_5 |
-| `BTN_NEXT` | PB8 | falling edge, EXTI9_5 |
-| `BTN_PREV` | PB9 | falling edge, EXTI9_5 |
+**Porting to a new board:** [2](02-mcu-resources.md) →
+[12](12-porting-to-a-new-board.md) → [4](04-tmc2209.md) →
+[7](07-w5500.md) → [3](03-execution-flow.md) →
+[13](13-build-test-debug.md#138-bring-up-sequence).
 
-Plus the onboard LED on PC13: the "byte received" toggle in the USB_CDC
-variant, and in both variants the boot-time subsystem fault blink codes
-(`fault_led.c`) — motor 1, motor 2, or the W5500/Ethernet link.
+**Adding a protocol:** [1](01-architecture.md) → [8](08-modbus-tcp.md) →
+[11](11-adding-a-protocol.md) → [9](09-reader-ui.md).
 
-## Not covered in depth
+**Fixing a bug:** [3](03-execution-flow.md) →
+[13](13-build-test-debug.md#139-troubleshooting) → the subsystem document →
+[known limitations](known-limitations.md).
 
-The TMC2209 UART datagram protocol (CRC, register bit layouts, the
-StallGuard/CoolStep sensorless-load-feedback feature) is deliberately left
-out of these guides — the how-to guide tells you which functions to call and
-what they do at a black-box level. Come back to `Lib/tmc2209/tmc2209.c` once
-you're comfortable with everything above it.
+## Conventions
 
-The mechanical design (disc geometry, gear ratio, flag width, how the two discs
-combine into a readable cell) is also out of scope; the guides describe what the
-firmware assumes about the mechanics, not why the mechanics are that way.
+- Code is referenced by file and symbol name (`plc_link.c`,
+  `plc_link_tick()`), never by line number.
+- Every number in these documents comes from a named constant or a
+  configuration file; the constant is named next to the value.
+- The generated API reference (`doxygen Doxyfile` → `docs/html/`, not tracked)
+  documents the `App/` sources function by function.
+- `images/wiring.svg` is generated by `tools/gen_wiring.py`.
