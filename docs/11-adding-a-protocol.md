@@ -133,7 +133,7 @@ Follow the existing `BRAILLE_INPUT` pattern in `CMakeLists.txt`:
 
 - Keep the codec free of I/O, like `modbus_tcp.c`, so every validation path
   can be tested on the host with byte arrays (see `tests/test_modbus_tcp.c`
-  and [13-build-test-debug.md](13-build-test-debug.md#host-tests)).
+  and [13-build-test-debug.md](13-build-test-debug.md#134-host-tests)).
 - The reader's behaviour needs no new tests: drive the new link against the
   existing `reader_ui` on hardware and check the sounds listed in
   [10-sound-feedback.md](10-sound-feedback.md).

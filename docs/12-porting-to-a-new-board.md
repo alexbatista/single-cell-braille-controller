@@ -101,7 +101,7 @@ Keep the pin table in the root `README.md` in step with it.
 
 Bring the subsystems up in an order where each step can be judged on its own;
 the procedure and the commands are in
-[13-build-test-debug.md](13-build-test-debug.md#bring-up-sequence).
+[13-build-test-debug.md](13-build-test-debug.md#138-bring-up-sequence).
 
 1. Flash over SWD; LED off at rest.
 2. Drivers: no blink code 1 or 2 at start-up; discs turn during homing.

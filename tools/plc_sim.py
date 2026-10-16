@@ -35,10 +35,10 @@ real addressing. **You do not type either one in the normal flow** -- the
 defaults already match what the firmware is configured to look for, and
 verify_plc_sim.py passes its own when it needs them.
 
-The frame layout mirrors docs/09-modbus-tcp-and-plc-link.md and the firmware's
+The frame layout mirrors docs/08-modbus-tcp.md and the firmware's
 codec in App/Src/modbus_tcp.c. The full bench procedure, including how to tell
 whether the board is on the network at all before any of this matters, is
-docs/11-hardware-bring-up.md steps 1.5 and 1.6.
+docs/13-build-test-debug.md, "Bring-up sequence".
 """
 
 import argparse

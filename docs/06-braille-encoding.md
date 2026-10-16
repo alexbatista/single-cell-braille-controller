@@ -115,7 +115,7 @@ the codepoint, rejects malformed, overlong, surrogate and out-of-range
 sequences, and renders the low byte through the Latin-1 table (codepoints above
 U+00FF render blank). Only the USB_CDC variant calls it; the MODBUS reader calls
 `braille_render_char()` and `braille_render_dots()` directly. The decoder is
-described in [14-usb-cdc-variant.md](14-usb-cdc-variant.md#utf-8-decoder).
+described in [14-usb-cdc-variant.md](14-usb-cdc-variant.md#145-utf-8-decoder).
 
 ## 6.6 Adding or changing a character
 

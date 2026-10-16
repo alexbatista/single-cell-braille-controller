@@ -167,4 +167,4 @@ Some failures happen before or outside the application's reporting:
 
 Faults the application does report (TMC2209 not answering, homing failure,
 W5500 absent) are listed with their blink codes in
-[13-build-test-debug.md](13-build-test-debug.md#blink-codes).
+[13-build-test-debug.md](13-build-test-debug.md#137-blink-codes).
