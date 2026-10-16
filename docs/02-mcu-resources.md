@@ -146,8 +146,8 @@ Measured at the commit that introduced this document (`arm-none-eabi-gcc`
 
 | Build | Flash | RAM |
 |---|---|---|
-| Release (`-Os`), MODBUS | 22 360 B (34 %) | 3 320 B (16 %) |
-| Debug (`-O0 -g3`), MODBUS | 45 564 B (70 %) | 3 320 B (16 %) |
+| Release (`-Os`), MODBUS | 22 360 B (34 %) | 3 328 B (16 %) |
+| Debug (`-O0 -g3`), MODBUS | 45 564 B (70 %) | 3 328 B (16 %) |
 | Release, USB_CDC | 22 104 B (34 %) | 7 312 B (36 %) |
 | Debug, USB_CDC | 47 604 B (73 %) | 7 312 B (36 %) |
 
