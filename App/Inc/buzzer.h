@@ -43,8 +43,8 @@ void buzzer_init(TIM_HandleTypeDef *htim, uint32_t channel);
  * software involvement, so a tone started immediately before a blocking disc
  * move would sound for the whole move unless something stopped it. Every
  * pattern is short -- 480 ms at the very worst, most under 250 ms -- against
- * disc moves that already block for around a second, and button presses are
- * latched by their interrupt throughout, so nothing is lost.
+ * disc moves that already block for up to about half a second, and the first
+ * press of each button during the block is latched by its interrupt.
  *
  * @param sound Which notification to play. @c READER_SOUND_NONE and any
  *              unknown value do nothing.

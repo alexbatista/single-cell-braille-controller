@@ -10,8 +10,10 @@
 // is timer-driven and a pass of delay costs nothing.
 //
 // Two calls inside this loop block, both bounded and both deliberate: a disc
-// move takes about a second, and a buzzer pattern up to 480 ms. Button presses
-// are latched by their interrupt throughout, so none is lost.
+// move (at most half a turn on the shortest path, about 0.5 s) and a buzzer
+// pattern (up to 480 ms). The first press of a button during a block is
+// latched by its interrupt; further presses of the same button before it is
+// released and re-armed collapse into that one.
 // ----------------------------------------------------------------------------
 
 #include "app_main.h"

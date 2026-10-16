@@ -19,9 +19,9 @@
 // Re-arming is deliberately done from the main loop rather than the interrupt,
 // because it needs to observe the pin at rest, which an edge cannot report.
 //
-// Each button carries one flag, not a counter. A disc move blocks for about a
-// second, and a reader who taps NEXT three times during one wants to move on
-// by one field, not three.
+// Each button carries one flag, not a counter. A disc move blocks for up to
+// about half a second, and a reader who taps NEXT three times during one wants
+// to move on by one field, not three.
 // ----------------------------------------------------------------------------
 
 #include "buttons.h"

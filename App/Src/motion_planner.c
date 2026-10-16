@@ -18,8 +18,9 @@
 #include <stdint.h>
 
 // Each motor is a TMC2209 configured over its own UART and moved through its
-// STEP/DIR pins via the stepper module; both motors step in lockstep from
-// the same paced loop.
+// STEP/DIR pins via the stepper module. Every motor has its own hardware STEP
+// pulse train (TIM2_CH2 for motor 01, TIM3_CH4 for motor 02), so both discs
+// move concurrently and a move lasts as long as the slower of the two.
 // ----------------------------------------------------------------------------
 
 #define APP_FULL_STEPS_PER_REV 200u // 1.8 degree motor
