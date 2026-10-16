@@ -47,7 +47,8 @@ PREDEFINED             = __attribute__(x)= \
                          __weak= \
                          __IO= \
                          __I= \
-                         __O=
+                         __O= \
+                         BRAILLE_INPUT_MODBUS
 
 #---------------------------------------------------------------------------
 # Output formats
