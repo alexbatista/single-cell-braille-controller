@@ -27,9 +27,12 @@
 /**
  * @brief Bind the buzzer to its timer channel.
  *
- * The timer must already be configured for PWM with a 1 MHz counter tick,
- * which is what @c MX_TIM4_Init() sets up (prescaler 47 on the 48 MHz APB1
- * timer clock). Only the period and compare value are changed afterwards.
+ * The timer must already be initialised for PWM on @p channel (as
+ * @c MX_TIM4_Init() does), because its counter tick is computed here from
+ * the clock tree and the timer's prescaler. The tick must be low enough that
+ * the lowest tone's period fits the 16-bit auto-reload register: with the
+ * current 1 MHz tick (APB1 timer clock 48 MHz, prescaler 47) it is 4545
+ * counts at 220 Hz. Only the period and compare value change afterwards.
  *
  * @param htim    Timer driving the buzzer pin.
  * @param channel Timer channel, e.g. @c TIM_CHANNEL_1.

@@ -154,7 +154,8 @@ doxygen Doxyfile       # → docs/html/index.html (not tracked by git)
 
 The input is `App/` and the root `README.md`; `Lib/` and `Core/` are excluded.
 `BRAILLE_INPUT_MODBUS` is predefined, so the reference documents the default
-variant. Call and caller graphs need Graphviz.
+variant. The call graphs (`CALL_GRAPH = YES`) need Graphviz; caller graphs are
+off.
 
 ## 13.6 PLC simulator
 
@@ -235,8 +236,11 @@ the previous one passed.
    NEXT gives the rising pair, then (with no PLC) the fault tone after
    `PLC_RESPONSE_TIMEOUT_MS`, unless a fault tone already played in the last
    10 s (`PLC_FAULT_SOUND_MIN_INTERVAL_MS`).
-7. **End to end with the simulator** (`plc_sim.py --toggle`): NEXT → rising
-   pair → confirm tone → `A`, `E`, value. Walk all 11 fields; a toggle during
+7. **End to end with the simulator** (`plc_sim.py --toggle`): about half a
+   second after the link connects, the first background poll arrives and the
+   confirm tone plays with the cell still blank. NEXT then shows `A`, `E`,
+   value. (NEXT pressed before that first poll returns plays the rising pair
+   first.) Walk all 11 fields; a toggle during
    the read gives the triple chirp once; NEXT past the last field adopts the
    newer package.
 8. **End to end with the PLC.** Same as step 7, with values checked against the

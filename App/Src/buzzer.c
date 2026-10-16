@@ -4,7 +4,8 @@
 // Tone patterns for the five reader notifications. Pitch is just a period:
 // ARR = tick/f - 1, and a compare of half the period is 50% duty. The counter
 // tick is read from the clock tree at init (48 MHz SYSCLK, APB1 /2 and a
-// prescaler of 48 give 1 MHz today), so a retuned clock keeps the pitches.
+// prescaler of 48 give 1 MHz today), so a retuned clock keeps the pitches as
+// long as the lowest tone's period still fits the 16-bit timer.
 //
 // The patterns are separated by texture as well as pitch. Two sounds that
 // differ only in frequency are hard to tell apart on a small piezo, so

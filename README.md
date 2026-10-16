@@ -215,7 +215,8 @@ GND is common to every board.
 > **Do not plug in the Blue Pill's USB while the 12 V supply is on.** The board
 > is powered through its 3V3 pin. USB would feed the board's own 3.3 V regulator
 > at the same time, so two regulators would drive the same rail. The default
-> firmware does not use the USB port anyway.
+> firmware does not use the USB port anyway; for the USB bench variant, see
+> [docs/14](docs/14-usb-cdc-variant.md#141-building-and-using-it).
 
 ### Wiring
 
@@ -373,7 +374,9 @@ To adapt the device to another machine, change that table and `PLC_COIL_COUNT`.
 1. Both discs turn briefly while they **home** to their flags.
 2. The device connects to the PLC. If the PLC can't be reached, the buzzer plays
    a low double tone about every 10 s.
-3. Press **NEXT** to request data and start reading.
+3. When the first package arrives the buzzer plays a single confirm tone; the
+   cell stays blank. Press **NEXT** to start reading. (NEXT pressed before any
+   data has arrived asks the PLC immediately.)
 
 If something fails at boot, the onboard LED blinks a code:
 

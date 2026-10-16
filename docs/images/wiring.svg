@@ -63,7 +63,7 @@
 <path d="M1026,258 L1050,258" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1026,258 L1050,258" stroke="#e377c2" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M1066,210 L1066,236" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M1066,210 L1066,236" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M1066,210 L1066,236" stroke="#e377c2" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M1066,280 L1066,296 L1112,296 L1112,90" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1066,280 L1066,296 L1112,296 L1112,90" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="1112" cy="90" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>

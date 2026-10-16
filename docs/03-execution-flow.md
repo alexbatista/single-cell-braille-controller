@@ -181,10 +181,10 @@ Consequences:
   `plc_link_tick()`. A render (≤ 0.5 s) plus a sound (≤ 0.48 s) in the same
   pass can postpone it by about 1 s. The same applies to the response timeout
   and the label dwell, which can only expire late, never early.
-- **A slow reply can be reported as a timeout even though it arrived.** The
-  timeout is checked after `read_response()` in the same tick, so a reply that
-  arrived during a long block is read first; only a reply still missing when
-  the tick runs counts as late.
+- **A long block does not by itself cause a false timeout.** The timeout is
+  checked after `read_response()` in the same tick, so a reply that arrived
+  during a long block is read first; only a reply still missing when the tick
+  runs counts as late.
 
 ## 3.8 Button presses during a block
 

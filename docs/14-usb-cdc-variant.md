@@ -25,9 +25,13 @@ port on Windows). Open it with any terminal program; the baud rate setting is
 ignored. Each byte received is echoed back, the LED toggles, and the character
 is rendered.
 
-**Power:** in this variant the board is normally powered from USB. Do not feed
-the 3.3 V rail from the external supply at the same time (see the caution in
-the root README). The motors still need 12 V on the TMC2209 VM pins.
+**Power:** in this variant the Blue Pill is powered from USB, and its own
+regulator drives its 3V3 pin. The motors still need the 12 V supply, so before
+plugging in USB **disconnect the Blue Pill's 3V3 pin from the power
+breakout's 3.3 V rail** (the rail keeps feeding the TMC2209 VCC_IO and the
+slot sensors) and keep GND common. Never connect USB while the 3V3 pin is
+still tied to the breakout: two regulators would drive the same rail (see the
+caution in the root README).
 
 ## 14.2 What runs
 

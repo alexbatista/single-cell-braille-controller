@@ -5,8 +5,9 @@
  *
  * Each motor is a TMC2209 configured over its own UART and moved through its
  * STEP/DIR pins via the @ref stepper module. Each motor has its own
- * hardware STEP pulse train, so both discs move concurrently. This layer owns the two stepper instances and
- * translates absolute disc angles into signed microstep moves.
+ * hardware STEP pulse train, so both discs move concurrently. This layer
+ * owns the two stepper instances and translates absolute disc angles into
+ * signed microstep moves.
  */
 
 #ifndef MOTION_PLANNER_H

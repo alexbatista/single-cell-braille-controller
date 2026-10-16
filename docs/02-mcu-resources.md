@@ -141,8 +141,9 @@ the end of RAM. Linked with `--specs=nano.specs`, `-ffunction-sections
 -fdata-sections` and `--gc-sections`; `-fstack-usage` writes a `.su` file per
 object and the link prints a memory summary.
 
-Measured at the commit that introduced this document (`arm-none-eabi-gcc`
-14.3.1, `--print-memory-usage`; RAM includes the reserved heap and stack):
+Measured when this document was last revised (`arm-none-eabi-gcc` 13.3.1
+from the STM32Cube bundle, `--print-memory-usage`; RAM includes the reserved
+heap and stack):
 
 | Build | Flash | RAM |
 |---|---|---|

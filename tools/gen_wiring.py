@@ -148,7 +148,7 @@ R_X0, R_X1 = 998, 1026            # base resistor body
 E_GND_X = 1112                    # emitter return column to the GND rail
 wire([(tx("B6"), BP_TOP_Y), (tx("B6"), 320), (985, 320), (985, BASE_Y), (R_X0, BASE_Y)], C["buzz"])
 wire([(R_X1, BASE_Y), (BASE_X, BASE_Y)], C["buzz"])
-wire([(BZ_X, 210), (BZ_X, C_Y)], C["gnd"])
+wire([(BZ_X, 210), (BZ_X, C_Y)], C["buzz"])  # buzzer (-) to collector, not ground
 wire([(BZ_X, E_Y), (BZ_X, 296), (E_GND_X, 296), (E_GND_X, GND_TOP)], C["gnd"]); dot(E_GND_X, GND_TOP, C["gnd"])
 wire([(BZ_X, 162), (BZ_X, V5_TOP)], C["5v"]); dot(BZ_X, V5_TOP, C["5v"])
 
