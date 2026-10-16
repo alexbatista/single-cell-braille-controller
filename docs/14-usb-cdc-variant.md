@@ -16,7 +16,7 @@ it, how the USB stack is organised, the receive path and the UTF-8 decoder.
 
 ```bash
 cmake --preset Debug -DBRAILLE_INPUT=USB_CDC
-cmake --build --preset Debug
+ninja -C build/Debug
 # flash as usual, then connect the Blue Pill's USB port to the PC
 ```
 

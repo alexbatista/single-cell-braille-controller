@@ -45,9 +45,13 @@ export PATH=$B/cmake/<ver>/bin:$B/ninja/<ver>/bin:$B/gnu-tools-for-stm32/<ver>/b
 ## 13.2 Building
 
 ```bash
-cmake --preset Debug                 # configure: build/Debug, MODBUS variant
-cmake --build --preset Debug         # → build/Debug/single-cell-braille-controller.elf
+cmake --preset Debug                 # configure once: build/Debug, MODBUS variant
+cd build/Debug && ninja              # → build/Debug/single-cell-braille-controller.elf
 ```
+
+After the first configure, run `ninja` in the build directory after each
+change; it re-runs CMake by itself when a `CMakeLists.txt` changes.
+`cmake --build --preset Debug` from the repository root is equivalent.
 
 | Preset | Flags | Output directory |
 |---|---|---|
@@ -62,7 +66,7 @@ Variant selection (cached; reconfigure to switch back):
 
 ```bash
 cmake --preset Debug -DBRAILLE_INPUT=USB_CDC
-cmake --build --preset Debug
+ninja -C build/Debug
 cmake --preset Debug -DBRAILLE_INPUT=MODBUS
 ```
 
@@ -76,13 +80,19 @@ code paths of `app_main.c`.
 Connect the ST-Link to the SWD header (3V3, SWDIO, SWCLK, GND).
 
 ```bash
-# STM32CubeProgrammer
-STM32_Programmer_CLI -c port=SWD -w build/Debug/single-cell-braille-controller.elf -v -rst
+# STM32CubeProgrammer, from build/Debug
+STM32_Programmer_CLI -c port=SWD speed=4000 -e all -w single-cell-braille-controller.elf 0x08000000 -s
 
 # OpenOCD
 openocd -f interface/stlink.cfg -f target/stm32f1x.cfg \
         -c "program build/Debug/single-cell-braille-controller.elf verify reset exit"
 ```
+
+With STM32CubeProgrammer: `speed=4000` is the SWD clock in kHz (lower it on
+long or loose wires), `-e all` erases the whole flash, `-w` writes the ELF
+(which carries its own load addresses; `0x08000000`, the flash base, only
+matters for a raw `.bin`), and `-s` starts the program. Add `-v` to read the
+flash back and verify it.
 
 `.vscode/launch.json` provides two debug configurations: *Debug with ST-Link*
 (Cortex-Debug extension) and *STM32Cube: Launch ST-Link GDB Server* (STM32 VS

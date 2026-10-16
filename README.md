@@ -307,11 +307,20 @@ your `PATH`.
 git clone https://github.com/alexbatista/single-cell-braille-controller.git
 cd single-cell-braille-controller
 
-cmake --preset Debug          # or: Release
-cmake --build --preset Debug
+# 1. Configure once: generates the Ninja build files in build/Debug
+cmake --preset Debug          # or: Release → build/Release
+
+# 2. Build with Ninja
+cd build/Debug
+ninja
 ```
 
-The firmware is written to `build/Debug/single-cell-braille-controller.elf`.
+The firmware is written to `build/Debug/single-cell-braille-controller.elf`,
+and the link step prints the flash and RAM usage. After the first configure,
+only step 2 is needed: run `ninja` in the build directory after every change
+(Ninja re-runs CMake by itself when a `CMakeLists.txt` changes).
+`cmake --build --preset Debug` from the repository root does the same as
+`ninja` in `build/Debug`.
 
 #### Build variants
 
@@ -324,21 +333,34 @@ The input source is chosen when you configure the build:
 
 ```bash
 cmake --preset Debug -DBRAILLE_INPUT=USB_CDC
-cmake --build --preset Debug
+ninja -C build/Debug
 ```
 
-The value is case-sensitive, and an invalid value stops the configure step.
+The value is case-sensitive, and an invalid value stops the configure step. It
+is cached in the build directory: configure again with `-DBRAILLE_INPUT=MODBUS`
+to switch back.
 
 ### Flash
 
-Connect the ST-Link to the Blue Pill's SWD header (3V3, SWDIO, SWCLK, GND),
-then flash with either tool:
+Connect the ST-Link to the Blue Pill's SWD header (3V3, SWDIO, SWCLK, GND).
+From the build directory, flash with STM32CubeProgrammer:
 
 ```bash
-# STM32CubeProgrammer
-STM32_Programmer_CLI -c port=SWD -w build/Debug/single-cell-braille-controller.elf -v -rst
+cd build/Debug
+STM32_Programmer_CLI -c port=SWD speed=4000 -e all -w single-cell-braille-controller.elf 0x08000000 -s
+```
 
-# or OpenOCD
+| Option | Meaning |
+| --- | --- |
+| `-c port=SWD speed=4000` | connect through the ST-Link over SWD at 4000 kHz |
+| `-e all` | erase the whole flash first |
+| `-w single-cell-braille-controller.elf 0x08000000` | write the firmware; the flash starts at `0x08000000`. An ELF file carries its own load addresses, so the address only matters when writing a raw `.bin` |
+| `-s` | start the program once written |
+
+If the connection fails at 4000 kHz (long or loose SWD wires), lower `speed`.
+OpenOCD works too:
+
+```bash
 openocd -f interface/stlink.cfg -f target/stm32f1x.cfg \
         -c "program build/Debug/single-cell-braille-controller.elf verify reset exit"
 ```
