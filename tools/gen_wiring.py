@@ -97,8 +97,8 @@ text(RAIL_END_MID + 8, GND_MID + 4, "GND", 11, C["gnd"], weight="bold")
 # Blue Pill pin x positions (USB end on the left).
 TOP = ["B12", "B13", "B14", "B15", "A8", "A9", "A10", "A11", "A12", "A15",
        "B3", "B4", "B5", "B6", "B7", "B8", "B9", "5V", "GND", "3V3"]
-BOT = ["VB", "C13", "C14", "C15", "A0", "A1", "A2", "A3", "A4", "A5",
-       "A6", "A7", "B0", "B1", "B10", "B11", "R", "3V3", "GND", "GND"]
+BOT = ["GND", "GND", "3V3", "R", "B11", "B10", "B1", "B0", "A7", "A6",
+       "A5", "A4", "A3", "A2", "A1", "A0", "C15", "C14", "C13", "VB"]
 BP_X0, PITCH = 460, 26
 BP_TOP_Y, BP_BOT_Y = 478, 582
 
@@ -172,25 +172,28 @@ def resistor(x):
         e(f'<rect x="{x - 5}" y="{yy}" width="10" height="3" fill="{c}"/>')
 
 
-T1 = dict(VM=305, GNDm=331, VIO=357, GND=383, MS1=409, MS2=435, STEP=461, PDN=487, DIR=513, EN=539)
-T2 = dict(DIR=955, EN=981, STEP=1007, PDN=1033, MS1=1059, MS2=1085, GND=1111, VIO=1137, GNDm=1163, VM=1189)
+# Motor 02 sits on the left (its pins are near the USB end of the bottom
+# header), motor 01 on the right. Pin order on each box follows the order of
+# the Blue Pill pins feeding it, so the signal wires never cross.
+T2 = dict(VM=305, GNDm=331, VIO=357, GND=383, MS1=409, MS2=435, PDN=461, STEP=487, EN=513, DIR=539)
+T1 = dict(EN=955, DIR=981, PDN=1007, STEP=1033, MS1=1059, MS2=1085, GND=1111, VIO=1137, GNDm=1163, VM=1189)
 
-# motor 01: STEP A1, TX A2, RX A3, DIR A4, EN A5
-wire([(bx("A1"), BP_BOT_Y), (bx("A1"), 712), (T1["STEP"], 712), (T1["STEP"], TMC_TOP)], C["step"])
-wire([(bx("A2"), BP_BOT_Y), (bx("A2"), J_Y), (bx("A3"), J_Y)], C["uart"])
-wire([(bx("A3"), BP_BOT_Y), (bx("A3"), 722), (T1["PDN"], 722), (T1["PDN"], TMC_TOP)], C["uart"])
-wire([(bx("A4"), BP_BOT_Y), (bx("A4"), 732), (T1["DIR"], 732), (T1["DIR"], TMC_TOP)], C["dir"])
-wire([(bx("A5"), BP_BOT_Y), (bx("A5"), 742), (T1["EN"], 742), (T1["EN"], TMC_TOP)], C["en"])
-dot(bx("A3"), J_Y, C["uart"]); resistor(bx("A2"))
-# motor 02: DIR A7, EN B0, STEP B1, TX B10, RX B11
-wire([(bx("A7"), BP_BOT_Y), (bx("A7"), 752), (T2["DIR"], 752), (T2["DIR"], TMC_TOP)], C["dir"])
-wire([(bx("B0"), BP_BOT_Y), (bx("B0"), 742), (T2["EN"], 742), (T2["EN"], TMC_TOP)], C["en"])
-wire([(bx("B1"), BP_BOT_Y), (bx("B1"), 732), (T2["STEP"], 732), (T2["STEP"], TMC_TOP)], C["step"])
+# motor 02 (left): RX B11, TX B10, STEP B1, EN B0, DIR A7
+wire([(bx("B11"), BP_BOT_Y), (bx("B11"), 712), (T2["PDN"], 712), (T2["PDN"], TMC_TOP)], C["uart"])
 wire([(bx("B10"), BP_BOT_Y), (bx("B10"), J_Y), (bx("B11"), J_Y)], C["uart"])
-wire([(bx("B11"), BP_BOT_Y), (bx("B11"), 722), (T2["PDN"], 722), (T2["PDN"], TMC_TOP)], C["uart"])
+wire([(bx("B1"), BP_BOT_Y), (bx("B1"), 722), (T2["STEP"], 722), (T2["STEP"], TMC_TOP)], C["step"])
+wire([(bx("B0"), BP_BOT_Y), (bx("B0"), 732), (T2["EN"], 732), (T2["EN"], TMC_TOP)], C["en"])
+wire([(bx("A7"), BP_BOT_Y), (bx("A7"), 742), (T2["DIR"], 742), (T2["DIR"], TMC_TOP)], C["dir"])
 dot(bx("B11"), J_Y, C["uart"]); resistor(bx("B10"))
-text(bx("A2") - 8, 624, "1 kΩ", 9, "#555", "end", halo=True)
-text(bx("B10") - 8, 624, "1 kΩ", 9, "#555", "end", halo=True)
+# motor 01 (right): EN A5, DIR A4, RX A3, TX A2, STEP A1
+wire([(bx("A5"), BP_BOT_Y), (bx("A5"), 752), (T1["EN"], 752), (T1["EN"], TMC_TOP)], C["en"])
+wire([(bx("A4"), BP_BOT_Y), (bx("A4"), 742), (T1["DIR"], 742), (T1["DIR"], TMC_TOP)], C["dir"])
+wire([(bx("A3"), BP_BOT_Y), (bx("A3"), 732), (T1["PDN"], 732), (T1["PDN"], TMC_TOP)], C["uart"])
+wire([(bx("A2"), BP_BOT_Y), (bx("A2"), J_Y), (bx("A3"), J_Y)], C["uart"])
+wire([(bx("A1"), BP_BOT_Y), (bx("A1"), 722), (T1["STEP"], 722), (T1["STEP"], TMC_TOP)], C["step"])
+dot(bx("A3"), J_Y, C["uart"]); resistor(bx("A2"))
+text(bx("A2") + 8, 624, "1 kΩ", 9, "#555", halo=True)
+text(bx("B10") + 8, 624, "1 kΩ", 9, "#555", halo=True)
 
 # TMC power + MS1/MS2 to the mid rails
 for T in (T1, T2):
@@ -200,7 +203,7 @@ for T in (T1, T2):
 
 # TMC -> motors
 MOT_Y = 975
-for T, xs in ((T1, (385, 410, 435, 460)), (T2, (1035, 1060, 1085, 1110))):
+for T, xs in ((T2, (385, 410, 435, 460)), (T1, (1035, 1060, 1085, 1110))):
     for x, col in zip(xs, ("m_a1", "m_a2", "m_b1", "m_b2")):
         wire([(x, 906), (x, MOT_Y)], C[col])
 
@@ -286,17 +289,17 @@ for i, n in enumerate(BOT):
     pin(BP_X0 + PITCH * i, BP_BOT_Y)
     text(BP_X0 + PITCH * i, BP_BOT_Y - 10, n, 9, "#fff", "middle")
 e(f'<circle cx="{bx("C13")}" cy="552" r="4" fill="#7CFC00"/>')
-text(bx("C13") + 8, 556, "LED (onboard)", 8, "#cfe0ff")
+text(bx("C13") - 8, 556, "LED (onboard)", 8, "#cfe0ff", "end")
 text(985, 510, "SWD →", 9, "#cfe0ff", "end")
 text(985, 522, "ST-Link", 9, "#cfe0ff", "end")
 
 # TMC2209 boards
-for T, x0, title, sub in ((T1, 290, "TMC2209 · motor 01", "USART2 · STEP TIM2_CH2"),
-                          (T2, 940, "TMC2209 · motor 02", "USART3 · STEP TIM3_CH4")):
+for T, x0, title, sub in ((T2, 290, "TMC2209 · motor 02", "USART3 · STEP TIM3_CH4"),
+                          (T1, 940, "TMC2209 · motor 01", "USART2 · STEP TIM2_CH2")):
     box(x0, 770, 270, 140, "#6b2fa0")
     names = {"GNDm": "GND", "PDN": "PDN", "VIO": "VCC_IO"}
     pins_edge([(x, names.get(k, k)) for k, x in T.items()], 774, "top")
-    xs = (385, 410, 435, 460) if T is T1 else (1035, 1060, 1085, 1110)
+    xs = (385, 410, 435, 460) if T is T2 else (1035, 1060, 1085, 1110)
     pins_edge(list(zip(xs, ("A1", "A2", "B1", "B2"))), 906, "bottom")
     text(x0 + 135, 854, title, 13, "#fff", "middle", "bold")
     text(x0 + 135, 870, sub, 10, "#e5d4f5", "middle")
@@ -307,7 +310,7 @@ text(280, 896, "PDN = J1 pin 4, the UART", 10, "#555", "end", halo=True)
 text(280, 910, "pin by factory default", 10, "#555", "end", halo=True)
 
 # Motors
-for x0, title, sub in ((352, "NEMA17 · motor 01", "disc 1 · dots 1, 4"), (1002, "NEMA17 · motor 02", "disc 2 · dots 2, 3, 5, 6")):
+for x0, title, sub in ((352, "NEMA17 · motor 02", "disc 2 · dots 2, 3, 5, 6"), (1002, "NEMA17 · motor 01", "disc 1 · dots 1, 4")):
     e(f'<rect x="{x0}" y="{MOT_Y}" width="140" height="140" rx="10" fill="#8d939b" stroke="#555"/>')
     e(f'<circle cx="{x0 + 70}" cy="{MOT_Y + 75}" r="34" fill="#6c7279"/>')
     e(f'<circle cx="{x0 + 70}" cy="{MOT_Y + 75}" r="7" fill="#ddd"/>')

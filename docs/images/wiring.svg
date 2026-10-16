@@ -85,62 +85,44 @@
 <path d="M1390,208 L1390,90" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1390,208 L1390,90" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="1390" cy="90" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M902,582 L902,685" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M902,582 L902,685" stroke="#ff8c00" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="902" cy="685" r="4.5" fill="#ff8c00" stroke="#fff" stroke-width="1.2"/>
-<path d="M928,582 L928,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M928,582 L928,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="928" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M590,582 L590,712 L461,712 L461,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M590,582 L590,712 L461,712 L461,770" stroke="#2ca02c" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M616,582 L616,650 L642,650" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M616,582 L616,650 L642,650" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M642,582 L642,722 L487,722 L487,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M642,582 L642,722 L487,722 L487,770" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M668,582 L668,732 L513,732 L513,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M668,582 L668,732 L513,732 L513,770" stroke="#1f77b4" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M694,582 L694,742 L539,742 L539,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M694,582 L694,742 L539,742 L539,770" stroke="#7f7f7f" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="642" cy="650" r="4.5" fill="#d4a900" stroke="#fff" stroke-width="1.2"/>
-<rect x="611" y="604" width="10" height="30" rx="4" fill="#e9d3a6" stroke="#8a6d3b"/>
-<rect x="611" y="610" width="10" height="3" fill="#8b4513"/>
-<rect x="611" y="616" width="10" height="3" fill="#111"/>
-<rect x="611" y="622" width="10" height="3" fill="#d62728"/>
-<path d="M746,582 L746,752 L955,752 L955,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M746,582 L746,752 L955,752 L955,770" stroke="#1f77b4" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M772,582 L772,742 L981,742 L981,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M772,582 L772,742 L981,742 L981,770" stroke="#7f7f7f" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M798,582 L798,732 L1007,732 L1007,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M798,582 L798,732 L1007,732 L1007,770" stroke="#2ca02c" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M824,582 L824,650 L850,650" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M824,582 L824,650 L850,650" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<path d="M850,582 L850,722 L1033,722 L1033,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M850,582 L850,722 L1033,722 L1033,770" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="850" cy="650" r="4.5" fill="#d4a900" stroke="#fff" stroke-width="1.2"/>
-<rect x="819" y="604" width="10" height="30" rx="4" fill="#e9d3a6" stroke="#8a6d3b"/>
-<rect x="819" y="610" width="10" height="3" fill="#8b4513"/>
-<rect x="819" y="616" width="10" height="3" fill="#111"/>
-<rect x="819" y="622" width="10" height="3" fill="#d62728"/>
-<text x="608" y="624" font-size="9" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">1 kΩ</text>
-<text x="816" y="624" font-size="9" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">1 kΩ</text>
-<path d="M305,770 L305,670" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M305,770 L305,670" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="305" cy="670" r="4.5" fill="#d62728" stroke="#fff" stroke-width="1.2"/>
-<path d="M331,770 L331,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M331,770 L331,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="331" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M357,770 L357,685" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M357,770 L357,685" stroke="#ff8c00" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="357" cy="685" r="4.5" fill="#ff8c00" stroke="#fff" stroke-width="1.2"/>
-<path d="M383,770 L383,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M383,770 L383,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="383" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M409,770 L409,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M409,770 L409,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="409" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M435,770 L435,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M435,770 L435,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="435" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M512,582 L512,685" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M512,582 L512,685" stroke="#ff8c00" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="512" cy="685" r="4.5" fill="#ff8c00" stroke="#fff" stroke-width="1.2"/>
+<path d="M460,582 L460,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M460,582 L460,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="460" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M564,582 L564,712 L461,712 L461,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M564,582 L564,712 L461,712 L461,770" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M590,582 L590,650 L564,650" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M590,582 L590,650 L564,650" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M616,582 L616,722 L487,722 L487,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M616,582 L616,722 L487,722 L487,770" stroke="#2ca02c" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M642,582 L642,732 L513,732 L513,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M642,582 L642,732 L513,732 L513,770" stroke="#7f7f7f" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M668,582 L668,742 L539,742 L539,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M668,582 L668,742 L539,742 L539,770" stroke="#1f77b4" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="564" cy="650" r="4.5" fill="#d4a900" stroke="#fff" stroke-width="1.2"/>
+<rect x="585" y="604" width="10" height="30" rx="4" fill="#e9d3a6" stroke="#8a6d3b"/>
+<rect x="585" y="610" width="10" height="3" fill="#8b4513"/>
+<rect x="585" y="616" width="10" height="3" fill="#111"/>
+<rect x="585" y="622" width="10" height="3" fill="#d62728"/>
+<path d="M720,582 L720,752 L955,752 L955,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M720,582 L720,752 L955,752 L955,770" stroke="#7f7f7f" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M746,582 L746,742 L981,742 L981,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M746,582 L746,742 L981,742 L981,770" stroke="#1f77b4" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M772,582 L772,732 L1007,732 L1007,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M772,582 L772,732 L1007,732 L1007,770" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M798,582 L798,650 L772,650" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M798,582 L798,650 L772,650" stroke="#d4a900" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<path d="M824,582 L824,722 L1033,722 L1033,770" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M824,582 L824,722 L1033,722 L1033,770" stroke="#2ca02c" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="772" cy="650" r="4.5" fill="#d4a900" stroke="#fff" stroke-width="1.2"/>
+<rect x="793" y="604" width="10" height="30" rx="4" fill="#e9d3a6" stroke="#8a6d3b"/>
+<rect x="793" y="610" width="10" height="3" fill="#8b4513"/>
+<rect x="793" y="616" width="10" height="3" fill="#111"/>
+<rect x="793" y="622" width="10" height="3" fill="#d62728"/>
+<text x="806" y="624" font-size="9" fill="#555" text-anchor="start" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">1 kΩ</text>
+<text x="598" y="624" font-size="9" fill="#555" text-anchor="start" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">1 kΩ</text>
 <path d="M1189,770 L1189,670" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1189,770 L1189,670" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="1189" cy="670" r="4.5" fill="#d62728" stroke="#fff" stroke-width="1.2"/>
@@ -159,6 +141,24 @@
 <path d="M1085,770 L1085,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1085,770 L1085,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="1085" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M305,770 L305,670" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M305,770 L305,670" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="305" cy="670" r="4.5" fill="#d62728" stroke="#fff" stroke-width="1.2"/>
+<path d="M331,770 L331,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M331,770 L331,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="331" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M357,770 L357,685" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M357,770 L357,685" stroke="#ff8c00" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="357" cy="685" r="4.5" fill="#ff8c00" stroke="#fff" stroke-width="1.2"/>
+<path d="M383,770 L383,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M383,770 L383,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="383" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M409,770 L409,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M409,770 L409,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="409" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
+<path d="M435,770 L435,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
+<path d="M435,770 L435,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="435" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
 <path d="M385,906 L385,975" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M385,906 L385,975" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M410,906 L410,975" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
@@ -323,47 +323,47 @@
 <rect x="950" y="474" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="954" y="496" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">3V3</text>
 <rect x="456" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="460" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">VB</text>
+<text x="460" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">GND</text>
 <rect x="482" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="486" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">C13</text>
+<text x="486" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">GND</text>
 <rect x="508" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="512" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">C14</text>
+<text x="512" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">3V3</text>
 <rect x="534" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="538" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">C15</text>
+<text x="538" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">R</text>
 <rect x="560" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="564" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A0</text>
+<text x="564" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B11</text>
 <rect x="586" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="590" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A1</text>
+<text x="590" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B10</text>
 <rect x="612" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="616" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A2</text>
+<text x="616" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B1</text>
 <rect x="638" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="642" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A3</text>
+<text x="642" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B0</text>
 <rect x="664" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="668" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A4</text>
+<text x="668" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A7</text>
 <rect x="690" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="694" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A5</text>
+<text x="694" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A6</text>
 <rect x="716" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="720" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A6</text>
+<text x="720" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A5</text>
 <rect x="742" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="746" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A7</text>
+<text x="746" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A4</text>
 <rect x="768" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="772" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B0</text>
+<text x="772" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A3</text>
 <rect x="794" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="798" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B1</text>
+<text x="798" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A2</text>
 <rect x="820" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="824" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B10</text>
+<text x="824" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A1</text>
 <rect x="846" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="850" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">B11</text>
+<text x="850" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">A0</text>
 <rect x="872" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="876" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">R</text>
+<text x="876" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">C15</text>
 <rect x="898" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="902" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">3V3</text>
+<text x="902" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">C14</text>
 <rect x="924" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="928" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">GND</text>
+<text x="928" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">C13</text>
 <rect x="950" y="578" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="954" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">GND</text>
-<circle cx="486" cy="552" r="4" fill="#7CFC00"/>
-<text x="494" y="556" font-size="8" fill="#cfe0ff" text-anchor="start" font-weight="normal">LED (onboard)</text>
+<text x="954" y="572" font-size="9" fill="#fff" text-anchor="middle" font-weight="normal">VB</text>
+<circle cx="928" cy="552" r="4" fill="#7CFC00"/>
+<text x="920" y="556" font-size="8" fill="#cfe0ff" text-anchor="end" font-weight="normal">LED (onboard)</text>
 <text x="985" y="510" font-size="9" fill="#cfe0ff" text-anchor="end" font-weight="normal">SWD →</text>
 <text x="985" y="522" font-size="9" fill="#cfe0ff" text-anchor="end" font-weight="normal">ST-Link</text>
 <rect x="290" y="770" width="270" height="140" rx="6" fill="#6b2fa0" stroke="#00000055"/>
@@ -380,13 +380,13 @@
 <rect x="431" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="438.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 438.5 783)">MS2</text>
 <rect x="457" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="464.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 464.5 783)">STEP</text>
+<text x="464.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 464.5 783)">PDN</text>
 <rect x="483" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="490.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 490.5 783)">PDN</text>
+<text x="490.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 490.5 783)">STEP</text>
 <rect x="509" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="516.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 516.5 783)">DIR</text>
+<text x="516.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 516.5 783)">EN</text>
 <rect x="535" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="542.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 542.5 783)">EN</text>
+<text x="542.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 542.5 783)">DIR</text>
 <rect x="381" y="902" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="388.5" y="897" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 388.5 897)">A1</text>
 <rect x="406" y="902" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -395,17 +395,17 @@
 <text x="438.5" y="897" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 438.5 897)">B1</text>
 <rect x="456" y="902" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="463.5" y="897" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 463.5 897)">B2</text>
-<text x="425" y="854" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">TMC2209 · motor 01</text>
-<text x="425" y="870" font-size="10" fill="#e5d4f5" text-anchor="middle" font-weight="normal">USART2 · STEP TIM2_CH2</text>
+<text x="425" y="854" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">TMC2209 · motor 02</text>
+<text x="425" y="870" font-size="10" fill="#e5d4f5" text-anchor="middle" font-weight="normal">USART3 · STEP TIM3_CH4</text>
 <rect x="940" y="770" width="270" height="140" rx="6" fill="#6b2fa0" stroke="#00000055"/>
 <rect x="951" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="958.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 958.5 783)">DIR</text>
+<text x="958.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 958.5 783)">EN</text>
 <rect x="977" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="984.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 984.5 783)">EN</text>
+<text x="984.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 984.5 783)">DIR</text>
 <rect x="1003" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="1010.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1010.5 783)">STEP</text>
+<text x="1010.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1010.5 783)">PDN</text>
 <rect x="1029" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
-<text x="1036.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1036.5 783)">PDN</text>
+<text x="1036.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1036.5 783)">STEP</text>
 <rect x="1055" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="1062.5" y="783" font-size="9" fill="#fff" text-anchor="end" font-weight="normal" transform="rotate(-90 1062.5 783)">MS1</text>
 <rect x="1081" y="770" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
@@ -426,8 +426,8 @@
 <text x="1088.5" y="897" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 1088.5 897)">B1</text>
 <rect x="1106" y="902" width="8" height="8" fill="#e8c34a" stroke="#7a5c00" stroke-width="1"/>
 <text x="1113.5" y="897" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 1113.5 897)">B2</text>
-<text x="1075" y="854" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">TMC2209 · motor 02</text>
-<text x="1075" y="870" font-size="10" fill="#e5d4f5" text-anchor="middle" font-weight="normal">USART3 · STEP TIM3_CH4</text>
+<text x="1075" y="854" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">TMC2209 · motor 01</text>
+<text x="1075" y="870" font-size="10" fill="#e5d4f5" text-anchor="middle" font-weight="normal">USART2 · STEP TIM2_CH2</text>
 <text x="280" y="846" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">MS1 = MS2 = GND</text>
 <text x="280" y="860" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">→ UART address 0</text>
 <text x="280" y="874" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">(both drivers)</text>
@@ -440,8 +440,8 @@
 <circle cx="478" cy="989" r="5" fill="#555"/>
 <circle cx="366" cy="1101" r="5" fill="#555"/>
 <circle cx="478" cy="1101" r="5" fill="#555"/>
-<text x="340" y="1035" font-size="12" fill="#222" text-anchor="end" font-weight="bold">NEMA17 · motor 01</text>
-<text x="340" y="1051" font-size="10" fill="#555" text-anchor="end" font-weight="normal">disc 1 · dots 1, 4</text>
+<text x="340" y="1035" font-size="12" fill="#222" text-anchor="end" font-weight="bold">NEMA17 · motor 02</text>
+<text x="340" y="1051" font-size="10" fill="#555" text-anchor="end" font-weight="normal">disc 2 · dots 2, 3, 5, 6</text>
 <text x="340" y="1067" font-size="10" fill="#555" text-anchor="end" font-weight="normal">coil A → A1/A2 · coil B → B1/B2</text>
 <rect x="1002" y="975" width="140" height="140" rx="10" fill="#8d939b" stroke="#555"/>
 <circle cx="1072" cy="1050" r="34" fill="#6c7279"/>
@@ -450,8 +450,8 @@
 <circle cx="1128" cy="989" r="5" fill="#555"/>
 <circle cx="1016" cy="1101" r="5" fill="#555"/>
 <circle cx="1128" cy="1101" r="5" fill="#555"/>
-<text x="990" y="1035" font-size="12" fill="#222" text-anchor="end" font-weight="bold">NEMA17 · motor 02</text>
-<text x="990" y="1051" font-size="10" fill="#555" text-anchor="end" font-weight="normal">disc 2 · dots 2, 3, 5, 6</text>
+<text x="990" y="1035" font-size="12" fill="#222" text-anchor="end" font-weight="bold">NEMA17 · motor 01</text>
+<text x="990" y="1051" font-size="10" fill="#555" text-anchor="end" font-weight="normal">disc 1 · dots 1, 4</text>
 <text x="990" y="1067" font-size="10" fill="#555" text-anchor="end" font-weight="normal">coil A → A1/A2 · coil B → B1/B2</text>
 <rect x="1258" y="746" width="222" height="420" rx="6" fill="#f7f7f7" stroke="#ddd"/>
 <text x="1270" y="766" font-size="12" fill="#222" text-anchor="start" font-weight="bold">Legend</text>
