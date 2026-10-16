@@ -1,9 +1,10 @@
 // ----------------------------------------------------------------------------
 // buzzer.c
 //
-// Tone patterns for the five reader notifications. The timer arrives already
-// configured for a 1 MHz counter tick, so pitch is just a period: at 1 MHz,
-// ARR = 1000000/f - 1, and a compare of half the period is 50% duty.
+// Tone patterns for the five reader notifications. Pitch is just a period:
+// ARR = tick/f - 1, and a compare of half the period is 50% duty. The counter
+// tick is read from the clock tree at init (48 MHz SYSCLK, APB1 /2 and a
+// prescaler of 48 give 1 MHz today), so a retuned clock keeps the pitches.
 //
 // The patterns are separated by texture as well as pitch. Two sounds that
 // differ only in frequency are hard to tell apart on a small piezo, so
@@ -15,8 +16,13 @@
 
 #include <stddef.h>
 
-/** @brief Counter tick the timer is configured for, in hertz. */
-#define BUZZER_TIMER_TICK_HZ 1000000u
+/**
+ * @brief Timer-clock multiplier when the APB1 prescaler is not 1.
+ *
+ * TIM4 sits on APB1, whose timer clock is PCLK1 doubled whenever the APB1
+ * prescaler divides (RM0008 clock tree).
+ */
+#define BUZZER_APB1_TIMER_CLOCK_MULTIPLIER 2u
 
 /** @brief Duty cycle divisor: half the period is 50%. */
 #define BUZZER_DUTY_DIVISOR 2u
@@ -109,6 +115,7 @@ static const buzzer_pattern_t buzzer_pattern_edge = BUZZER_PATTERN(edge);
 
 static TIM_HandleTypeDef *buzzer_timer;
 static uint32_t buzzer_channel;
+static uint32_t buzzer_tick_hz;
 
 static const buzzer_pattern_t *buzzer_pattern_for(reader_sound_t sound) {
   switch (sound) {
@@ -137,7 +144,7 @@ static void buzzer_tone(uint16_t frequency_hz) {
     (void)HAL_TIM_PWM_Stop(buzzer_timer, buzzer_channel);
     return;
   }
-  uint32_t period = (BUZZER_TIMER_TICK_HZ / (uint32_t)frequency_hz) - 1u;
+  uint32_t period = (buzzer_tick_hz / (uint32_t)frequency_hz) - 1u;
   __HAL_TIM_SET_AUTORELOAD(buzzer_timer, period);
   __HAL_TIM_SET_COMPARE(buzzer_timer, buzzer_channel,
                         (period + 1u) / BUZZER_DUTY_DIVISOR);
@@ -145,9 +152,20 @@ static void buzzer_tone(uint16_t frequency_hz) {
   (void)HAL_TIM_PWM_Start(buzzer_timer, buzzer_channel);
 }
 
+// Frequency the buzzer timer counts at, after its prescaler, derived the same
+// way as the STEP timers' tick in stepper_hal.c.
+static uint32_t buzzer_timer_tick_hz(TIM_HandleTypeDef const *htim) {
+  uint32_t tick_hz = HAL_RCC_GetPCLK1Freq();
+  if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
+    tick_hz *= BUZZER_APB1_TIMER_CLOCK_MULTIPLIER;
+  }
+  return tick_hz / (htim->Instance->PSC + 1u);
+}
+
 void buzzer_init(TIM_HandleTypeDef *htim, uint32_t channel) {
   buzzer_timer = htim;
   buzzer_channel = channel;
+  buzzer_tick_hz = buzzer_timer_tick_hz(htim);
 }
 
 void buzzer_play(reader_sound_t sound) {
