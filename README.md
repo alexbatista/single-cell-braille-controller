@@ -5,7 +5,7 @@ tactile output to an industrial human–machine interface (HMI). It connects to 
 PLC over the existing Ethernet network as a **Modbus TCP client**. It then presents the machine's status
 signals in braille, one short label and value at a time.
 
-The firmware, wiring, and (soon) mechanical files are all in this repository.
+The firmware, wiring and 3D-printable mechanical parts are all in this repository.
 The design and its functional characterization are described in the paper
 [*An Open Hardware Single-Cell Braille Display for
 Industrial HMI: Design and Functional
@@ -274,9 +274,24 @@ That is more than the 6.1–7.6 mm braille cell spacing, so two neighboring grou
 are never felt as a single cell. The dot dimensions follow the standard braille
 specification and are fixed when the disc is printed.
 
-The enclosure, discs, and actuator assembly (`.step` files) will be published in
-`hardware/enclosure/`. Until then, the firmware's assumptions about the
-mechanics (disc positions, the homing tab, rotation direction) are documented in
+The printable parts are in [`hardware/enclosure/`](hardware/enclosure/) as STL
+files. GitHub shows each one in an interactive 3D viewer when the file is
+opened.
+
+| File | Part | Bounding box (mm) |
+| --- | --- | --- |
+| [`Embossed Disc 1 Row.stl`](hardware/enclosure/Embossed%20Disc%201%20Row.stl) | Disc 1: dots 1 and 4, driven by motor 01 | 45.8 × 45.8 × 16.5 |
+| [`Embossed Disc 2 Row.stl`](hardware/enclosure/Embossed%20Disc%202%20Row.stl) | Disc 2: dots 2, 3, 5 and 6, driven by motor 02 | 47.8 × 46.8 × 16.3 |
+| [`Tampa superior.stl`](hardware/enclosure/Tampa%20superior.stl) | Top cover of the actuator enclosure | 60.0 × 130.9 × 55.4 |
+| [`Tampa Inferior.stl`](hardware/enclosure/Tampa%20Inferior.stl) | Bottom cover of the actuator enclosure | 60.0 × 130.9 × 15.8 |
+| [`Passa cabo parte 1.stl`](hardware/enclosure/Passa%20cabo%20parte%201.stl) | Cable pass-through, part 1 | 21.6 × 13.1 × 4.5 |
+| [`Passa cabo parte 2.stl`](hardware/enclosure/Passa%20cabo%20parte%202.stl) | Cable pass-through, part 2 | 21.6 × 13.1 × 5.5 |
+
+STL files carry no units; the dimensions above assume millimetres, which
+matches the 45.8 mm disc. Each disc needs a tab that passes through its slot
+sensor once per revolution; homing parks index 0 (the blank cell) on that tab's
+edge. The firmware's assumptions about the mechanics (disc positions, the
+homing tab, rotation direction) are documented in
 [docs/05](docs/05-motion-and-homing.md).
 
 ---
@@ -472,6 +487,7 @@ Core/       STM32CubeMX-generated startup, clocks and peripheral init
 Drivers/    ST HAL and CMSIS (vendor code)
 tests/      host-side unit tests
 docs/       developer documentation, design record, images
+hardware/   3D-printable enclosure and disc parts (STL)
 tools/      PLC simulator and self-test, wiring diagram generator
 ```
 
