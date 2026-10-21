@@ -362,12 +362,12 @@ From the build directory, flash with STM32CubeProgrammer:
 
 ```bash
 cd build/Debug
-STM32_Programmer_CLI -c port=SWD speed=4000 -e all -w single-cell-braille-controller.elf 0x08000000 -s
+STM32_Programmer_CLI -c port=SWD freq=4000 -e all -w single-cell-braille-controller.elf 0x08000000 -s
 ```
 
 | Option | Meaning |
 | --- | --- |
-| `-c port=SWD speed=4000` | connect through the ST-Link over SWD at 4000 kHz |
+| `-c port=SWD freq=4000` | connect through the ST-Link over SWD at 4000 kHz |
 | `-e all` | erase the whole flash first |
 | `-w single-cell-braille-controller.elf 0x08000000` | write the firmware; the flash starts at `0x08000000`. An ELF file carries its own load addresses, so the address only matters when writing a raw `.bin` |
 | `-s` | start the program once written |

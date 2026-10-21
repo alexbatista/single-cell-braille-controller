@@ -81,14 +81,14 @@ Connect the ST-Link to the SWD header (3V3, SWDIO, SWCLK, GND).
 
 ```bash
 # STM32CubeProgrammer, from build/Debug
-STM32_Programmer_CLI -c port=SWD speed=4000 -e all -w single-cell-braille-controller.elf 0x08000000 -s
+STM32_Programmer_CLI -c port=SWD freq=4000 -e all -w single-cell-braille-controller.elf 0x08000000 -s
 
 # OpenOCD
 openocd -f interface/stlink.cfg -f target/stm32f1x.cfg \
         -c "program build/Debug/single-cell-braille-controller.elf verify reset exit"
 ```
 
-With STM32CubeProgrammer: `speed=4000` is the SWD clock in kHz (lower it on
+With STM32CubeProgrammer: `freq=4000` is the SWD clock in kHz (lower it on
 long or loose wires), `-e all` erases the whole flash, `-w` writes the ELF
 (which carries its own load addresses; `0x08000000`, the flash base, only
 matters for a raw `.bin`), and `-s` starts the program. Add `-v` to read the
