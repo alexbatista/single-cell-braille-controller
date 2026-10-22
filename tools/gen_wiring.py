@@ -195,10 +195,10 @@ dot(bx("A3"), J_Y, C["uart"]); resistor(bx("A2"))
 text(bx("A2") + 8, 624, "1 kΩ", 9, "#555", halo=True)
 text(bx("B10") + 8, 624, "1 kΩ", 9, "#555", halo=True)
 
-# TMC power + MS1/MS2 to the mid rails
+# TMC power to the mid rails; MS1/MS2 stay open (internal pull-downs)
 for T in (T1, T2):
     for key, y, col in (("VM", V12_MID, "12v"), ("GNDm", GND_MID, "gnd"), ("VIO", V33_MID, "3v3"),
-                        ("GND", GND_MID, "gnd"), ("MS1", GND_MID, "gnd"), ("MS2", GND_MID, "gnd")):
+                        ("GND", GND_MID, "gnd")):
         wire([(T[key], TMC_TOP), (T[key], y)], C[col]); dot(T[key], y, C[col])
 
 # TMC -> motors
@@ -301,8 +301,8 @@ for T, x0, title, sub in ((T2, 290, "TMC2209 · motor 02", "USART3 · STEP TIM3_
     pins_edge(list(zip(xs, ("A1", "A2", "B1", "B2"))), 906, "bottom")
     text(x0 + 135, 854, title, 13, "#fff", "middle", "bold")
     text(x0 + 135, 870, sub, 10, "#e5d4f5", "middle")
-text(280, 846, "MS1 = MS2 = GND", 10, "#555", "end", halo=True)
-text(280, 860, "→ UART address 0", 10, "#555", "end", halo=True)
+text(280, 846, "MS1, MS2 open: internal", 10, "#555", "end", halo=True)
+text(280, 860, "pull-downs → UART address 0", 10, "#555", "end", halo=True)
 text(280, 874, "(both drivers)", 10, "#555", "end", halo=True)
 text(280, 896, "PDN = J1 pin 4, the UART", 10, "#555", "end", halo=True)
 text(280, 910, "pin by factory default", 10, "#555", "end", halo=True)

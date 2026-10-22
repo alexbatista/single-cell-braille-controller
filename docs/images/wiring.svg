@@ -135,12 +135,6 @@
 <path d="M1111,770 L1111,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M1111,770 L1111,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="1111" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M1059,770 L1059,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M1059,770 L1059,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="1059" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M1085,770 L1085,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M1085,770 L1085,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="1085" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
 <path d="M305,770 L305,670" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M305,770 L305,670" stroke="#d62728" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="305" cy="670" r="4.5" fill="#d62728" stroke="#fff" stroke-width="1.2"/>
@@ -153,12 +147,6 @@
 <path d="M383,770 L383,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M383,770 L383,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <circle cx="383" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M409,770 L409,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M409,770 L409,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="409" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
-<path d="M435,770 L435,700" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
-<path d="M435,770 L435,700" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-<circle cx="435" cy="700" r="4.5" fill="#222222" stroke="#fff" stroke-width="1.2"/>
 <path d="M385,906 L385,975" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
 <path d="M385,906 L385,975" stroke="#222222" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
 <path d="M410,906 L410,975" stroke="#fff" stroke-width="6.5" fill="none" stroke-linejoin="round"/>
@@ -426,8 +414,8 @@
 <text x="1113.5" y="897" font-size="9" fill="#fff" text-anchor="start" font-weight="normal" transform="rotate(-90 1113.5 897)">B2</text>
 <text x="1075" y="854" font-size="13" fill="#fff" text-anchor="middle" font-weight="bold">TMC2209 · motor 01</text>
 <text x="1075" y="870" font-size="10" fill="#e5d4f5" text-anchor="middle" font-weight="normal">USART2 · STEP TIM2_CH2</text>
-<text x="280" y="846" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">MS1 = MS2 = GND</text>
-<text x="280" y="860" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">→ UART address 0</text>
+<text x="280" y="846" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">MS1, MS2 open: internal</text>
+<text x="280" y="860" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">pull-downs → UART address 0</text>
 <text x="280" y="874" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">(both drivers)</text>
 <text x="280" y="896" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">PDN = J1 pin 4, the UART</text>
 <text x="280" y="910" font-size="10" fill="#555" text-anchor="end" font-weight="normal" stroke="#fff" stroke-width="3" paint-order="stroke">pin by factory default</text>
